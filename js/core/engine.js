@@ -7,6 +7,7 @@ import { ShopSystem } from 'systems/shop.js';
 import { EnergyManager } from 'systems/energy.js';
 import { WordManager } from 'systems/wordManager.js';
 import { UpgradeSystem } from 'systems/upgrades.js';
+import { FusionSystem } from 'systems/fusion.js';
 
 export class Engine {
     constructor() {
@@ -29,6 +30,7 @@ export class Engine {
         this.shopSystem = new ShopSystem(this);
         this.wordManager = new WordManager(this);
         this.upgradeSystem = new UpgradeSystem(this);
+        this.fusionSystem = new FusionSystem(this);
 
         // Collision sound related properties - moved potentially to an AudioManager later
         this.collisionSounds = {
@@ -99,13 +101,16 @@ export class Engine {
     }
 
     updateGame(dt) {
-        if (!this.container || !this.gameState.active) return;
+        if (!this.container || !this.gameState.active || !this.gameState.words) return;
 
         // Update word physics (movement, boundaries) via Physics module
-        this.physics.updatePhysics(this.gameState.words, dt * 60, this.container); // Pass dt scaled for 60fps base
+        // Filter out words being destroyed before passing to physics
+        const activeWords = this.gameState.words.filter(word => !word.isBeingDestroyed);
+
+        this.physics.updatePhysics(activeWords, dt * 60, this.container); // Pass dt scaled for 60fps base
 
         // Handle collisions via Physics module
-        this.physics.handleCollisions(this.gameState.words, this.container);
+        this.physics.handleCollisions(activeWords, this.container);
     }
 
     stopGameLoop() {
