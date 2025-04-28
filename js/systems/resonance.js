@@ -274,9 +274,42 @@ export class ResonanceSystem {
             return true; // Keep the connection
         });
 
+        // Update positions and visibility
+        this.connections.forEach(conn => {
+            const w1CenterX = conn.word1.x + conn.word1.radius;
+            const w1CenterY = conn.word1.y + conn.word1.radius;
+            const w2CenterX = conn.word2.x + conn.word2.radius;
+            const w2CenterY = conn.word2.y + conn.word2.radius;
+
+            const dx = w2CenterX - w1CenterX;
+            const dy = w2CenterY - w1CenterY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+
+            conn.element.style.left = `${w1CenterX}px`;
+            conn.element.style.top = `${w1CenterY - 1.5}px`; // Center the line vertically
+            conn.element.style.width = `${distance}px`;
+            conn.element.style.transform = `rotate(${angle}rad)`;
+
+            // Flash visibility if update is needed
+            if (needsUpdate) {
+                conn.element.style.opacity = '0.7'; // Make visible
+
+                // Clear previous timeout if exists
+                if (conn.visibleTimeout) {
+                    clearTimeout(conn.visibleTimeout);
+                }
+                // Set timeout to hide again
+                conn.visibleTimeout = setTimeout(() => {
+                    if (conn.element) { // Check if element still exists
+                        conn.element.style.opacity = '0';
+                    }
+                }, this.connectionVisibleDuration);
+            }
+        });
+
         if (needsUpdate) {
              this.connectionUpdateTimer = 0; // Reset timer
-
         }
     }
 
@@ -295,6 +328,46 @@ export class ResonanceSystem {
         this.connections = []; // Clear the array
         this.connectionUpdateTimer = 0; // Reset timer
     }
+
+    // Method to remove connections associated with a specific word instance
+    clearConnectionsForWord(wordInstance) {
+        const container = this.engine.container;
+        if (!container || !wordInstance) return;
+
+        const remainingConnections = [];
+        this.connections.forEach(conn => {
+            if (conn.word1 === wordInstance || conn.word2 === wordInstance) {
+                // Remove the DOM element
+                if (conn.element && container.contains(conn.element)) {
+                    container.removeChild(conn.element);
+                }
+                // Clear any pending visibility timeout
+                if (conn.visibleTimeout) {
+                    clearTimeout(conn.visibleTimeout);
+                }
+            } else {
+                remainingConnections.push(conn);
+            }
+        });
+        this.connections = remainingConnections;
+
+        // Also remove the word from any active chains
+        this.activeChains = this.activeChains.map(chain => {
+             chain.words = chain.words.filter(word => word !== wordInstance);
+             return chain;
+         }).filter(chain => chain.words.length > 1); // Remove chains with less than 2 words
+
+        // If the destroyed word was the last activated, clear the chain state
+        if (this.lastActivatedWord === wordInstance) {
+             this.lastActivatedWord = null;
+             this.clearChainTimer();
+             // No need to update display here, it happens in the main loop or when a new chain starts
+        }
+
+        console.log(`Cleared resonance connections for word: ${wordInstance.id}`);
+        this.updateResonanceDisplay(); // Update display after clearing
+    }
+
 
     // --- End New Connection Visual Logic ---
 
