@@ -63,6 +63,17 @@ export class ResonanceSystem {
             return 1;
         }
 
+        // Ensure both words exist and have IDs before proceeding
+        if (!this.lastActivatedWord.id || !word.id) {
+            console.warn("Resonance check failed: one or both words lack ID.");
+            this.lastActivatedWord = word; // Move to the next word
+            this.startChainTimer();
+            this.clearAllConnectionVisuals();
+            this.updateAllWordVisuals();
+            return 1;
+        }
+
+
         const chainKey1 = `${this.lastActivatedWord.id}_${word.id}`;
         const chainKey2 = `${word.id}_${this.lastActivatedWord.id}`;
         const chainTypeKey = this.wordAffinities[chainKey1] || this.wordAffinities[chainKey2];
@@ -118,6 +129,11 @@ export class ResonanceSystem {
     canFormResonance(word) {
         if (!this.lastActivatedWord || word === this.lastActivatedWord || !this.lastActivatedWord.element || !word.element) return false;
 
+         // Ensure both words exist and have IDs before proceeding
+        if (!this.lastActivatedWord.id || !word.id) {
+             return false;
+        }
+
         const chainKey1 = `${this.lastActivatedWord.id}_${word.id}`;
         const chainKey2 = `${word.id}_${this.lastActivatedWord.id}`;
         return !!(this.wordAffinities[chainKey1] || this.wordAffinities[chainKey2]);
@@ -149,7 +165,12 @@ export class ResonanceSystem {
 
     updateAllWordVisuals() {
         if (this.engine && this.engine.gameState && this.engine.gameState.words) {
-            this.engine.gameState.words.forEach(w => w.updateResonanceVisuals());
+            this.engine.gameState.words.forEach(w => {
+                 // Check if the word instance has the updateResonanceVisuals method before calling
+                 if (w && typeof w.updateResonanceVisuals === 'function') {
+                     w.updateResonanceVisuals();
+                 }
+             });
         }
     }
 
@@ -204,7 +225,7 @@ export class ResonanceSystem {
 
     createConnectionVisual(word1, word2, color) {
         const container = this.engine.container;
-        if (!container || !word1 || !word2 || !word1.element || !word2.element) return;
+        if (!container || !word1 || !word2 || !word1.element || !word2.element || word1.isBeingDestroyed || word2.isBeingDestroyed) return;
 
         const connectionElement = document.createElement('div');
         connectionElement.className = 'resonance-connection';
@@ -256,41 +277,6 @@ export class ResonanceSystem {
         if (needsUpdate) {
              this.connectionUpdateTimer = 0; // Reset timer
 
-             this.connections.forEach(conn => {
-                 // Ensure elements still exist before proceeding
-                 if (!conn.element || !conn.word1.element || !conn.word2.element) return;
-
-                 const x1 = conn.word1.x + conn.word1.radius;
-                 const y1 = conn.word1.y + conn.word1.radius;
-                 const x2 = conn.word2.x + conn.word2.radius;
-                 const y2 = conn.word2.y + conn.word2.radius;
-
-                 const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-                 const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
-
-                 // Update position and appearance
-                 conn.element.style.left = `${x1}px`;
-                 conn.element.style.top = `${y1}px`;
-                 conn.element.style.width = `${length}px`;
-                 conn.element.style.transform = `rotate(${angle}deg)`;
-                 conn.element.style.background = `linear-gradient(to right, transparent, ${conn.color}ff, transparent)`; // Update color just in case
-
-                 // Make it visible
-                 conn.element.style.opacity = '0.7';
-
-                 // Clear any previous timeout to hide it
-                 if (conn.visibleTimeout) {
-                     clearTimeout(conn.visibleTimeout);
-                 }
-
-                 // Set a new timeout to hide it again
-                 conn.visibleTimeout = setTimeout(() => {
-                     if (conn.element) { // Check if element still exists
-                         conn.element.style.opacity = '0';
-                     }
-                     conn.visibleTimeout = null; // Clear timeout reference
-                 }, this.connectionVisibleDuration);
-             });
         }
     }
 

@@ -35,6 +35,11 @@ export class WordCore {
         this.element = null;
         this.createElement();
         this.addTooltip();
+
+        // --- References to other components (set by Word.js) ---
+        this.wordInstance = null; // Reference back to the main Word object
+        this.physics = null; // Reference to the WordPhysics instance
+        this.eventListeners = null; // To store listeners for removal
     }
 
     createElement() {
@@ -51,6 +56,16 @@ export class WordCore {
         this.element.style.position = 'absolute';
         this.element.style.left = '0px'; // Base position for transform origin
         this.element.style.top = '0px';  // Base position for transform origin
+        this.element.style.display = 'flex'; // Use flex for centering text span
+        this.element.style.alignItems = 'center';
+        this.element.style.justifyContent = 'center';
+        this.element.style.borderRadius = '50%';
+        this.element.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+        this.element.style.color = '#fff';
+        this.element.style.textAlign = 'center';
+        this.element.style.fontSize = `${Math.max(10, this.radius * 0.25)}px`; // Adjust font size based on radius
+        this.element.style.textShadow = '1px 1px 2px rgba(0,0,0,0.7)';
+        this.element.style.userSelect = 'none'; // Prevent text selection
 
         // Initial position update
         this.updateElementPosition();
@@ -65,13 +80,21 @@ export class WordCore {
     addTooltip() {
         if (!this.element) return;
 
+        const tooltipContainer = document.createElement('div');
+        tooltipContainer.className = 'word-tooltip-container'; // For positioning
+
         const descriptionEl = document.createElement('div');
-        descriptionEl.className = 'word-description';
+        descriptionEl.className = 'word-description'; // The actual tooltip content
         descriptionEl.innerHTML = `
+            <span class="tooltip-title">${this.text}</span><br>
             ${this.description}<br>
             <span class="tooltip-category">[${this.ontologicalCategory}, ${this.epistemologicalSchool}, ${this.methodologicalApproach}]</span>
         `;
-        this.element.appendChild(descriptionEl);
+
+        tooltipContainer.appendChild(descriptionEl);
+        this.element.appendChild(tooltipContainer);
+
+        // Hide tooltip initially, show on hover (handled by CSS)
     }
 
     updateElementPosition() {
@@ -85,7 +108,10 @@ export class WordCore {
             this.x = containerRect ? (containerRect.width - this.size) / 2 : 0;
             this.y = containerRect ? (containerRect.height - this.size) / 2 : 0;
             // Reset velocity in behavior module if possible (requires reference or event)
-            // For now, just reset position here.
+            if (this.physics) {
+                this.physics.vx = 0;
+                this.physics.vy = 0;
+            }
             this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
         }
     }
@@ -94,6 +120,7 @@ export class WordCore {
     updateVisibilityStyle() {
          if (!this.element) return;
          this.element.style.display = this.isVisible ? 'flex' : 'none';
+         this.element.style.pointerEvents = this.isVisible ? 'auto' : 'none';
      }
 
     // Removes element from DOM without animation (called by WordBehavior.destroy)

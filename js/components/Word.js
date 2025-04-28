@@ -12,12 +12,14 @@ export class Word {
         this.feedback = new WordFeedback(this.core, engine, this.physics);
         this.activation = new WordActivation(this.core, engine, this.physics, this.feedback);
         this.lifecycle = new WordLifecycle(this.core, engine);
-
         this.interactionHandler = new WordInteractionHandler(this, container, engine);
+
+        this.core.wordInstance = this;
+        this.core.physics = this.physics;
 
         this.addEventListeners();
 
-        this.lifecycle.updateVisibility(this.interactionHandler);
+        this.updateVisibility();
     }
 
     get id() { return this.core.id; }
@@ -61,20 +63,43 @@ export class Word {
 
         const handleActivation = (event) => {
             if (!this.core.isVisible || this.core.isBeingDestroyed || this.interactionHandler.dragMoved) return;
-            this.activate();
+            if (event.target === this.core.element || event.target.parentNode === this.core.element) {
+                this.activate();
+            }
         }
 
-        this.core.element.addEventListener('click', handleActivation);
         this.core.element.addEventListener('mousedown', (e) => handleInteraction(this.interactionHandler.startDrag, e));
+        this.core.element.addEventListener('click', handleActivation);
 
-        this.core.element.addEventListener('touchstart', (e) => {
-             if (e.target === this.core.element || e.target.parentNode === this.core.element) {
-                 handleInteraction(this.interactionHandler.startDrag, e.touches[0]);
-             }
-         }, { passive: false });
+        const touchStartHandler = (e) => {
+            if (e.target === this.core.element || e.target.parentNode === this.core.element) {
+                e.preventDefault();
+                handleInteraction(this.interactionHandler.startDrag, e.touches[0]);
+            }
+        };
+
+        const touchEndHandler = (e) => {
+            if (this.interactionHandler.isDragging) {
+                if (!this.interactionHandler.dragMoved) {
+                    this.activate();
+                }
+                handleInteraction(this.interactionHandler.endDrag, e.changedTouches[0]);
+            }
+        };
+
+        this.core.element.addEventListener('touchstart', touchStartHandler, { passive: false });
+        document.addEventListener('touchend', touchEndHandler);
+        document.addEventListener('touchcancel', touchEndHandler);
+
+        this.core.eventListeners = {
+            touchstart: touchStartHandler,
+            touchend: touchEndHandler,
+            touchcancel: touchEndHandler
+        };
     }
 
     update(dt = 1) {
+        if (this.core.isBeingDestroyed) return;
         this.physics.updatePhysics(dt);
         this.feedback.updateResonanceVisuals();
         this.core.updateElementPosition();
@@ -85,6 +110,10 @@ export class Word {
     }
 
     destroy(skipAnimation = false) {
+        if (this.core.eventListeners) {
+            document.removeEventListener('touchend', this.core.eventListeners.touchend);
+            document.removeEventListener('touchcancel', this.core.eventListeners.touchcancel);
+        }
         this.lifecycle.destroy(skipAnimation);
     }
 
@@ -102,5 +131,5 @@ export class Word {
 
     updateVisibility() {
         this.lifecycle.updateVisibility(this.interactionHandler);
-     }
+    }
 }
