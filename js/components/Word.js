@@ -15,8 +15,8 @@ export class Word {
 
         this.x = 0;
         this.y = 0;
-        this.vx = (Math.random() - 0.5) * 2;
-        this.vy = (Math.random() - 0.5) * 2;
+        this.vx = (Math.random() - 0.5) * 1;
+        this.vy = (Math.random() - 0.5) * 1;
         this.damping = PHYSICS_CONFIG.DAMPING;
         this.pushForce = PHYSICS_CONFIG.PUSH_FORCE;
         this.maxSpeed = PHYSICS_CONFIG.MAX_SPEED;
@@ -45,17 +45,16 @@ export class Word {
         this.element.style.position = 'absolute';
         this.element.style.left = '0px';
         this.element.style.top = '0px';
+        this.element.style.transform = `translate(0px, 0px)`;
 
         this.container.appendChild(this.element);
 
-        // Use new getRandomPosition that biases towards center
         const initialPosition = getRandomPosition(this.element, this.container);
         this.x = initialPosition.x;
         this.y = initialPosition.y;
         this.updateElementPosition();
 
         this.addEventListeners();
-        this.startFloatingAnimation();
     }
 
     addEventListeners() {
@@ -96,7 +95,7 @@ export class Word {
             this.vx = (this.vx / speed) * this.maxSpeed;
             this.vy = (this.vy / speed) * this.maxSpeed;
         }
-        if (speed < PHYSICS_CONFIG.MIN_SPEED) {
+        if (speed < PHYSICS_CONFIG.MIN_SPEED && speed > 0) {
             this.vx = 0;
             this.vy = 0;
         }
@@ -232,12 +231,6 @@ export class Word {
             }
         }
         this.dragMoved = false;
-    }
-
-    startFloatingAnimation() {
-        setInterval(() => {
-            this.update(16 / 1000);
-        }, 16);
     }
 
     applyImpulse(impulseX, impulseY) {
