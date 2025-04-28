@@ -103,11 +103,34 @@ export class FusionSystem {
         const w1 = parts1[0]; // Primary part of the first word
         const w2 = parts2[0]; // Primary part of the second word
 
+        // Define philosophical combinations
+        const specialCombinations = {
+            'Logos_Aether': 'Divine Reason',
+            'Logos_Entropy': 'Ordered Chaos',
+            'Kairos_Monad': 'Perfect Moment',
+            'Aether_Anima': 'Ensouled Element',
+            'Apeiron_Entropy': 'Infinite Disorder',
+            'Quintessence_Monad': 'Prime Unity',
+            'Monad_Anima': 'Vital Principle',
+            'Anima_Entropy': 'Spiritus Mundi'
+        };
+
+        // Check for special combinations
+        const combo1 = `${w1}_${w2}`;
+        const combo2 = `${w2}_${w1}`;
+        
+        if (specialCombinations[combo1]) {
+            return specialCombinations[combo1];
+        } else if (specialCombinations[combo2]) {
+            return specialCombinations[combo2];
+        }
+
+        // If no special combination, use the regular methods
         const methods = [
-            () => `${w1.substring(0, Math.ceil(w1.length / 2))}${w2.substring(Math.floor(w2.length / 2))}`, // Combine first half of w1 with second half of w2
-            () => `${w2.substring(0, Math.ceil(w2.length / 2))}${w1.substring(Math.floor(w1.length / 2))}`, // Combine first half of w2 with second half of w1
-            () => `${w1.slice(0, 3)}${w2.slice(-3)}`, // Combine first 3 letters of w1 with last 3 letters of w2
-            () => `${w1}-${w2}`.substring(0,15), // Hyphenate w1 and w2, limited to 15 characters
+            () => `${w1.substring(0, Math.ceil(w1.length / 2))}${w2.substring(Math.floor(w2.length / 2))}`, 
+            () => `${w2.substring(0, Math.ceil(w2.length / 2))}${w1.substring(Math.floor(w1.length / 2))}`, 
+            () => `${w1.slice(0, 3)}${w2.slice(-3)}`, 
+            () => `${w1}-${w2}`.substring(0,15), 
         ];
 
         const chosenMethod = methods[Math.floor(Math.random() * methods.length)];
@@ -115,13 +138,15 @@ export class FusionSystem {
 
         fusedName = fusedName.charAt(0).toUpperCase() + fusedName.slice(1);
 
-        if (parts1.length > 1 && parts2.length > 1 && Math.random() > 0.5) {
-            const descriptor = Math.random() > 0.5 ? parts1[1] : parts2[1];
-            fusedName += ` ${descriptor}`;
-        } else if (parts1.length > 1 && Math.random() > 0.3) {
-            fusedName += ` ${parts1[1]}`;
-        } else if (parts2.length > 1 && Math.random() > 0.3) {
-            fusedName += ` ${parts2[1]}`;
+        // Add philosophical suffix
+        const philosophicalSuffixes = [
+            'Principle', 'Essence', 'Doctrine', 'Concept', 'Paradigm', 
+            'Element', 'Form', 'Substance', 'Emanation', 'Theorem'
+        ];
+        
+        if (Math.random() > 0.5) {
+            const suffix = philosophicalSuffixes[Math.floor(Math.random() * philosophicalSuffixes.length)];
+            fusedName += ` ${suffix}`;
         }
 
         return fusedName.substring(0, 25); // Limit the fused name to 25 characters

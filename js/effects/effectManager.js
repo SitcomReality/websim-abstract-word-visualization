@@ -12,28 +12,28 @@ export function createSpecialEffect(id, x, y, color, count) {
     let particleCount = count || 10;
     
     switch(id) {
-        case 'smorma':
+        case 'logos':
             createExplosion(x, y, color, EFFECT_SETTINGS.EXPLOSION.particleCount);
             break;
-        case 'pips':
+        case 'kairos':
             createSpiral(x, y, color, EFFECT_SETTINGS.SPIRAL.particleCount);
             break;
-        case 'tine':
+        case 'aether':
             createWave(x, y, color, EFFECT_SETTINGS.WAVE.waveCount);
             break;
-        case 'elusive':
+        case 'apeiron':
             createFadeEffect(x, y, color, EFFECT_SETTINGS.FADE.particleCount);
             break;
-        case 'paradiastolic':
+        case 'quintessence':
             createPulse(x, y, color, EFFECT_SETTINGS.PULSE.pulseCount);
             break;
-        case 'perihelion':
+        case 'monad':
             createOrbit(x, y, color, EFFECT_SETTINGS.ORBIT.orbiterCount);
             break;
-        case 'scolflocs':
+        case 'anima':
             createRain(x, y, color, EFFECT_SETTINGS.RAIN.dropCount);
             break;
-        case 'hyperbolic':
+        case 'entropy':
             createHyperEffect(x, y, color, EFFECT_SETTINGS.HYPER.particleCount);
             break;
         case 'fusion':

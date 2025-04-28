@@ -1,58 +1,58 @@
 export const COLORS = {
-    SMORMA: {
+    LOGOS: {
         primary: '#ff5722',
         secondary: '#e91e63'
     },
-    PIPS: {
+    KAIROS: {
         primary: '#9c27b0',
         secondary: '#673ab7'
     },
-    TINE: {
+    AETHER: {
         primary: '#2196f3',
         secondary: '#03a9f4'
     },
-    ELUSIVE: {
+    APEIRON: {
         primary: '#009688',
         secondary: '#4caf50'
     },
-    PARADIASTOLIC: {
+    QUINTESSENCE: {
         primary: '#ffc107',
         secondary: '#ff9800'
     },
-    PERIHELION: {
+    MONAD: {
         primary: '#f44336',
         secondary: '#b71c1c'
     },
-    SCOLFLOCS: {
+    ANIMA: {
         primary: '#3f51b5',
         secondary: '#1a237e'
     },
-    HYPERBOLIC: {
+    ENTROPY: {
         primary: '#607d8b',
         secondary: '#263238'
     }
 };
 
 export const SIZES = {
-    SMORMA: 120,
-    PIPS: 80,
-    TINE: 90,
-    ELUSIVE: 130,
-    PARADIASTOLIC: 150,
-    PERIHELION: 110,
-    SCOLFLOCS: 140,
-    HYPERBOLIC: 125
+    LOGOS: 120,
+    KAIROS: 80,
+    AETHER: 90,
+    APEIRON: 130,
+    QUINTESSENCE: 150,
+    MONAD: 110,
+    ANIMA: 140,
+    ENTROPY: 125
 };
 
 export const WORDS_DATA = [
-    { id: 'smorma', text: 'Smorma pips', size: SIZES.SMORMA, colors: COLORS.SMORMA, energyPotential: 10 },
-    { id: 'pips', text: 'Pips', size: SIZES.PIPS, colors: COLORS.PIPS, energyPotential: 5 },
-    { id: 'tine', text: 'Tine', size: SIZES.TINE, colors: COLORS.TINE, energyPotential: 7 },
-    { id: 'elusive', text: 'Elusive allusion', size: SIZES.ELUSIVE, colors: COLORS.ELUSIVE, energyPotential: 12 },
-    { id: 'paradiastolic', text: 'Paradiastolic clotting', size: SIZES.PARADIASTOLIC, colors: COLORS.PARADIASTOLIC, energyPotential: 15 },
-    { id: 'perihelion', text: 'Perihelion torsion', size: SIZES.PERIHELION, colors: COLORS.PERIHELION, energyPotential: 11 },
-    { id: 'scolflocs', text: 'Scolflocs periporter', size: SIZES.SCOLFLOCS, colors: COLORS.SCOLFLOCS, energyPotential: 14 },
-    { id: 'hyperbolic', text: 'Hyperbolic lenity', size: SIZES.HYPERBOLIC, colors: COLORS.HYPERBOLIC, energyPotential: 13 }
+    { id: 'logos', text: 'Logos', size: SIZES.LOGOS, colors: COLORS.LOGOS, energyPotential: 10 },
+    { id: 'kairos', text: 'Kairos', size: SIZES.KAIROS, colors: COLORS.KAIROS, energyPotential: 5 },
+    { id: 'aether', text: 'Aether', size: SIZES.AETHER, colors: COLORS.AETHER, energyPotential: 7 },
+    { id: 'apeiron', text: 'Apeiron', size: SIZES.APEIRON, colors: COLORS.APEIRON, energyPotential: 12 },
+    { id: 'quintessence', text: 'Quintessence', size: SIZES.QUINTESSENCE, colors: COLORS.QUINTESSENCE, energyPotential: 15 },
+    { id: 'monad', text: 'Monad', size: SIZES.MONAD, colors: COLORS.MONAD, energyPotential: 11 },
+    { id: 'anima', text: 'Anima', size: SIZES.ANIMA, colors: COLORS.ANIMA, energyPotential: 14 },
+    { id: 'entropy', text: 'Entropy', size: SIZES.ENTROPY, colors: COLORS.ENTROPY, energyPotential: 13 }
 ];
 
 export const EFFECT_SETTINGS = {
