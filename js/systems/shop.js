@@ -82,6 +82,11 @@ export class ShopSystem {
 
             // Apply upgrade effect via UpgradeSystem
             this.engine.upgradeSystem.applyUpgradeEffect(item, this.currentLevels[item.id]);
+            
+            // Track upgrades for achievement
+            if (this.engine.achievementSystem) {
+                this.engine.achievementSystem.incrementAchievementProgress('master_upgrader');
+            }
 
             // Re-render shop to reflect changes
             this.renderShopItems();

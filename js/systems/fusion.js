@@ -21,6 +21,11 @@ export class FusionSystem {
             // --- Successful Fusion ---
             this.engine.addEnergy(-energyCost); // Deduct energy cost
 
+            // Unlock first fusion achievement
+            if (this.engine.achievementSystem) {
+                this.engine.achievementSystem.unlockAchievement('first_fusion');
+            }
+
             // Calculate fusion point (midpoint between centers)
             const fusionX = (word1.x + word1.radius + word2.x + word2.radius) / 2;
             const fusionY = (word1.y + word1.radius + word2.y + word2.radius) / 2;

@@ -169,6 +169,11 @@ export class Word {
 
         if (this.engine && typeof this.engine.addEnergy === 'function') {
             this.engine.addEnergy(this.energyPotential);
+            
+            // Track word activations for achievements
+            if (this.engine.achievementSystem) {
+                this.engine.achievementSystem.incrementAchievementProgress('word_activator');
+            }
         } else {
             console.warn(`Word ${this.id}: Engine or addEnergy function not available for energy harvesting.`);
         }
