@@ -1,58 +1,60 @@
 export const COLORS = {
-    LOGOS: {
-        primary: '#ff5722',
-        secondary: '#e91e63'
-    },
-    KAIROS: {
-        primary: '#9c27b0',
-        secondary: '#673ab7'
-    },
-    AETHER: {
-        primary: '#2196f3',
-        secondary: '#03a9f4'
-    },
-    APEIRON: {
-        primary: '#009688',
-        secondary: '#4caf50'
-    },
-    QUINTESSENCE: {
-        primary: '#ffc107',
-        secondary: '#ff9800'
-    },
-    MONAD: {
-        primary: '#f44336',
-        secondary: '#b71c1c'
-    },
-    ANIMA: {
-        primary: '#3f51b5',
-        secondary: '#1a237e'
-    },
-    ENTROPY: {
-        primary: '#607d8b',
-        secondary: '#263238'
-    }
+    // Epistemological Schools
+    RATIONALISM: { primary: '#f44336', secondary: '#ff5722' }, // Logos, Monad (Red/Orange)
+    EMPIRICISM: { primary: '#2196f3', secondary: '#009688' }, // Aether, Apeiron (Blue/Green)
+    IDEALISM: { primary: '#9c27b0', secondary: '#3f51b5' }, // Kairos, Anima (Purple/Pink/Indigo)
+    MATERIALISM: { primary: '#ffc107', secondary: '#607d8b' } // Quintessence, Entropy (Yellow/Brown/Grey)
 };
 
 export const SIZES = {
-    LOGOS: 120,
-    KAIROS: 80,
-    AETHER: 90,
-    APEIRON: 130,
-    QUINTESSENCE: 150,
-    MONAD: 110,
-    ANIMA: 140,
-    ENTROPY: 125
+    // Ontological Categories
+    MICRO: 80, // Kairos
+    MESO_SMALL: 90, // Aether
+    MESO_MEDIUM: 110, // Monad
+    MESO_LARGE: 120, // Logos
+    MACRO_SMALL: 125, // Entropy
+    MACRO_MEDIUM: 130, // Apeiron
+    MACRO_LARGE: 140, // Anima
+    MACRO_HUGE: 150 // Quintessence
 };
 
 export const WORDS_DATA = [
-    { id: 'logos', text: 'Logos', size: SIZES.LOGOS, colors: COLORS.LOGOS, energyPotential: 10 },
-    { id: 'kairos', text: 'Kairos', size: SIZES.KAIROS, colors: COLORS.KAIROS, energyPotential: 5 },
-    { id: 'aether', text: 'Aether', size: SIZES.AETHER, colors: COLORS.AETHER, energyPotential: 7 },
-    { id: 'apeiron', text: 'Apeiron', size: SIZES.APEIRON, colors: COLORS.APEIRON, energyPotential: 12 },
-    { id: 'quintessence', text: 'Quintessence', size: SIZES.QUINTESSENCE, colors: COLORS.QUINTESSENCE, energyPotential: 15 },
-    { id: 'monad', text: 'Monad', size: SIZES.MONAD, colors: COLORS.MONAD, energyPotential: 11 },
-    { id: 'anima', text: 'Anima', size: SIZES.ANIMA, colors: COLORS.ANIMA, energyPotential: 14 },
-    { id: 'entropy', text: 'Entropy', size: SIZES.ENTROPY, colors: COLORS.ENTROPY, energyPotential: 13 }
+    // Rationalism (Red/Orange)
+    {
+        id: 'logos', text: 'Logos', size: SIZES.MESO_LARGE, colors: COLORS.RATIONALISM, energyPotential: 10,
+        ontologicalCategory: 'Meso', epistemologicalSchool: 'Rationalism', methodologicalApproach: 'Analytical'
+    },
+    {
+        id: 'monad', text: 'Monad', size: SIZES.MESO_MEDIUM, colors: COLORS.RATIONALISM, energyPotential: 11,
+        ontologicalCategory: 'Meso', epistemologicalSchool: 'Rationalism', methodologicalApproach: 'Synthetic'
+    },
+    // Empiricism (Blue/Green)
+    {
+        id: 'aether', text: 'Aether', size: SIZES.MESO_SMALL, colors: COLORS.EMPIRICISM, energyPotential: 7,
+        ontologicalCategory: 'Meso', epistemologicalSchool: 'Empiricism', methodologicalApproach: 'Hermeneutic'
+    },
+    {
+        id: 'apeiron', text: 'Apeiron', size: SIZES.MACRO_MEDIUM, colors: COLORS.EMPIRICISM, energyPotential: 12,
+        ontologicalCategory: 'Macro', epistemologicalSchool: 'Empiricism', methodologicalApproach: 'Dialectic'
+    },
+    // Idealism (Purple/Pink/Indigo)
+    {
+        id: 'kairos', text: 'Kairos', size: SIZES.MICRO, colors: COLORS.IDEALISM, energyPotential: 5,
+        ontologicalCategory: 'Micro', epistemologicalSchool: 'Idealism', methodologicalApproach: 'Hermeneutic'
+    },
+    {
+        id: 'anima', text: 'Anima', size: SIZES.MACRO_LARGE, colors: COLORS.IDEALISM, energyPotential: 14,
+        ontologicalCategory: 'Macro', epistemologicalSchool: 'Idealism', methodologicalApproach: 'Synthetic'
+    },
+    // Materialism (Yellow/Brown/Grey)
+    {
+        id: 'quintessence', text: 'Quintessence', size: SIZES.MACRO_HUGE, colors: COLORS.MATERIALISM, energyPotential: 15,
+        ontologicalCategory: 'Macro', epistemologicalSchool: 'Materialism', methodologicalApproach: 'Synthetic'
+    },
+    {
+        id: 'entropy', text: 'Entropy', size: SIZES.MACRO_SMALL, colors: COLORS.MATERIALISM, energyPotential: 13,
+        ontologicalCategory: 'Macro', epistemologicalSchool: 'Materialism', methodologicalApproach: 'Analytical'
+    }
 ];
 
 export const EFFECT_SETTINGS = {
