@@ -1,225 +1,204 @@
 # Esoteric Sphere: Philosophical Physics - Game Design Document
 
-## Concept Overview
-Esoteric Sphere is an interactive philosophical playground where abstract concepts take physical form. Players manipulate philosophical terms as tangible spheres, creating resonance chains and discovering deeper meaning through fusion and interaction. The experience blends meditative exploration with strategic progression through energy harvesting.
+## Core Concept
+Esoteric Sphere is a genre-defying philosophical roguelike where abstract concepts take physical form as interactive spheres. Players manipulate these concepts in an evolving ecosystem where meaning, color, and size create a complex interplay of systems. Each run presents unique challenges and opportunities through randomly offered upgrades that dramatically alter gameplay mechanics and force strategic adaptation.
+
+## Game Structure
+
+### Run-Based Progression
+- Each game is a distinct "philosophical inquiry" with randomized elements
+- Players progress through 3-5 "domains of thought" (levels) per run
+- Each domain has unique properties affecting sphere behavior and interactions
+- Final domain culminates in a "paradigm shift" challenge that tests mastery
+
+### Core Sphere System
+Philosophical spheres are categorized by three overlapping classification systems:
+
+#### Ontological Categories (Size-Based)
+- **Micro Concepts** (Small): Fast-moving, numerous, low individual energy but high collective potential
+- **Meso Concepts** (Medium): Balanced properties, form the backbone of most resonance chains
+- **Macro Concepts** (Large): Slow-moving but energy-rich, serve as anchors for complex systems
+
+#### Epistemological Schools (Color-Based)
+- **Rationalism** (Red/Orange): Emphasizes ordered patterns, structured resonance, and predictability
+- **Empiricism** (Blue/Green): Focuses on interaction, collision, and observable phenomena
+- **Idealism** (Purple/Pink): Specializes in transformation, fusion, and concept creation
+- **Materialism** (Yellow/Brown): Excels at energy production, resource management, and efficiency
+
+#### Methodological Approaches (Effect-Based)
+- **Dialectic**: Creates tensions and oppositions that generate energy through contrast
+- **Analytical**: Breaks down composite concepts into fundamental parts
+- **Synthetic**: Builds complex structures from simple elements
+- **Hermeneutic**: Interprets and transforms existing concepts into new meanings
 
 ## Core Gameplay Loop
 
-### Primary Loop
-1. **Exploration**: Interact with philosophical concept spheres through clicks and drags
-2. **Energy Harvesting**: Activate words to collect energy and create resonance chains
-3. **Strategic Investment**: Spend energy on upgrades that enhance word properties and mechanics
-4. **Fusion Discovery**: Combine compatible words to create new philosophical concepts
-5. **Progression**: Unlock deeper philosophical concepts and game mechanics
+### 1. Sphere Interaction & Energy Harvesting
+- Activate spheres to collect energy based on their properties
+- Strategically position and chain spheres based on current upgrade configuration
+- Navigate hazards, limitations, and conflicting sphere properties
 
-### Secondary Loops
-- **Resonance Mastery**: Discover and chain word combinations for multiplier effects
-- **Collection & Discovery**: Find all possible word combinations and effects
-- **Mastery & Optimization**: Maximize energy generation through strategic play
+### 2. Resource Management & Decision Points
+- Spend energy on:
+  - Sphere transmutation and enhancement
+  - Domain progression (unlocking new levels)
+  - Shop upgrades with transformative effects
+- Balance immediate needs versus long-term strategy
 
-## Core Mechanics
+### 3. Adaptation & System Mastery
+- Adapt to the specific "philosophical framework" created by your upgrade choices
+- Discover emergent interactions between modified systems
+- Optimize sphere arrangements based on your evolving ruleset
 
-### Philosophical Spheres
-Each philosophical sphere represents an abstract concept with unique properties:
-- **Logos** (Universal reason): Explosive energy release, radiating outward
-- **Kairos** (Perfect moment): Creates spiraling vortices, moments of opportunity
-- **Aether** (Universal substrate): Generates waves affecting nearby concepts
-- **Apeiron** (The boundless): Transcends boundaries with fade effects
-- **Quintessence** (Fifth essence): Pulses with cosmic energy
-- **Monad** (Fundamental unity): Creates satellites orbiting primary concept
-- **Anima** (Living principle): Rains down vital energy
-- **Entropy** (Increasing disorder): Accelerates all systems into chaos
+## Dynamic Systems Architecture
 
-Each sphere has properties that affect gameplay:
-- **Energy Potential**: Base energy generated when activated
-- **Resonance Affinity**: Compatibility with other concepts in chains
-- **Mass**: Physical weight affecting movement and collisions
-- **Effect Type**: Unique visual and mechanical effect when activated
-- **Rarity**: Determines base value and potential
+### Sphere Interactions (Expanded)
+Each sphere now has inherent relationships with other spheres based on:
 
-### Interaction Systems
+#### Mechanical Relationships
+- **Harmony**: Spheres that amplify each other's effects when activated in sequence
+- **Discord**: Spheres that nullify or penalize certain interactions when combined
+- **Resonance**: Complex chains that create cascading effects through the system
+- **Interference**: Spheres that modify the behavior of nearby concepts through field effects
 
-#### 1. Energy Harvesting
-- Click/tap spheres to activate them and harvest energy
-- Energy is the primary progression currency
-- Harvesting efficiency increases through:
-  - Resonance chains (up to 5x multiplier)
-  - Combo timing (consecutive activations)
-  - Upgrades (permanent enhancements)
-  - Collision kinetics (strategic movement)
+#### Physical Properties
+- **Mass**: Affects momentum, collision impact, and physical resistance
+- **Charge**: Creates attraction or repulsion between certain concept types
+- **Frequency**: Determines activation rhythm and resonance potential
+- **Volatility**: Probability of chaotic interactions and chain reactions
 
-#### 2. Philosophical Resonance
-Activating compatible concepts in sequence creates resonance chains:
-- **Etymological Resonance**: Words sharing linguistic roots (Logos-Aether)
-- **Semantic Resonance**: Words with related meanings (Apeiron-Entropy)
-- **Phonetic Resonance**: Words with similar sounds (Kairos-Anima)
-- **Chromatic Resonance**: Words with complementary colors (Entropy-Quintessence)
+### Upgrade System (Reimagined)
 
-Successful chains:
-- Multiply energy generation (stacking up to 5x)
-- Create temporary field effects
-- Reveal hidden connections between concepts
-- Decay over time (6-12 seconds), encouraging rhythmic play
+The shop now offers a randomized selection of 3-4 upgrades per domain from a pool of 30+ possible upgrades. Upgrades fundamentally alter gameplay rather than simply boosting stats:
 
-#### 3. Concept Fusion
-Dragging compatible spheres together initiates fusion:
-- Requires sufficient energy (cost: 15 units)
-- Success based on conceptual compatibility and upgrades
-- Creates new hybrid philosophies with combined properties
-- Outcomes:
-  - New word creation (60% chance)
-  - Energy bonus (40% chance)
-  - Special effects and achievements
+#### Transformative Upgrades
 
-#### 4. Kinetic Interactions
-- Spheres collide realistically based on mass and physical properties
-- High-velocity collisions generate small amounts of energy
-- Strategic positioning can create chain reactions
-- Upgrades can enhance physical properties for better flow
+**Epistemological Frameworks** (Change how you perceive and interact with spheres)
+- **Dualistic Perception**: Divide all spheres into complementary pairs. Only pairs can be activated together, but doing so doubles energy.
+- **Monistic Filter**: All spheres take on properties of the dominant color in your system. Color-based distinctions disappear, but resonance chains extend infinitely.
+- **Skeptical Method**: 30% chance for any activation to fail, but successful activations have 3x energy potential.
 
-### Progression Systems
+**Ontological Modifiers** (Change the nature of reality in your system)
+- **Deterministic Universe**: Spheres follow fixed paths after being set in motion. Collisions are 100% predictable but cannot be directly influenced after initial push.
+- **Quantum Uncertainty**: Spheres randomly teleport short distances when not observed (cursor not hovering). Each teleportation has a 20% chance to generate energy.
+- **Eternalism**: Time effects are eliminated. All chains and cooldowns are removed, but energy generation is reduced by 40%.
 
-#### 1. Shop Upgrades
-Energy can be spent on permanent upgrades:
-- **Energy Surge**: Increases base energy from all activations (+10% per level)
-- **Kinetic Amplifier**: Boosts energy from collisions (+50% per level)
-- **Lexical Affinity**: Improves fusion success rate (+15% per level)
-- **Elasticity Enhancement**: Makes concepts more reactive and bouncy
-- **Harmonic Resonator**: Extends resonance chain duration (+2s per level)
-- **Resonance Amplifier**: Increases resonance chain multipliers (+20% per level)
+**Methodological Approaches** (Change how your actions affect the system)
+- **Reductionist Toolkit**: Break any sphere into 3 smaller components. Large spheres can no longer be activated directly.
+- **Holist Vision**: Small spheres automatically merge into larger concepts. Individual activation is impossible, but fusion requires no energy.
+- **Pragmatic Framework**: All effects are simplified but 2x more powerful. Visual feedback is minimized.
 
-#### 2. Achievement System
-Completing challenges unlocks rewards:
-- **Lexical Alchemist**: First successful fusion (+100 energy)
-- **Energy Hoarder**: Accumulate 500 energy (+50 energy)
-- **Wordsmith**: Activate words 50 times (+75 energy)
-- **Upgrade Master**: Purchase 10 upgrades (+120 energy)
-- **Combo Novice/Master**: Achieve combo streaks (+75/+150 energy)
-- **Energy Rush**: Gain 100+ energy in under 10 seconds (+100 energy)
+#### Constraint Upgrades
+Upgrades that impose limitations but offer powerful benefits:
 
-#### 3. Discovery Progression
-- New philosophical concepts become available through fusion
-- Higher-tier concepts yield more energy and have stronger effects
-- Undiscovered combinations are hinted at through resonance patterns
-- Each discovery is recorded in a philosophical codex (future feature)
+- **Chromatic Blindness**: You can no longer distinguish or interact with one color family, but all other colors generate 4x energy.
+- **Categorical Imperative**: You must activate spheres in strict size order (small→medium→large), but completing a sequence grants massive energy bonuses.
+- **Nihilistic Void**: Random spheres periodically disappear from existence, but each disappearance releases energy to nearby concepts.
 
-## Advanced Mechanics (Progression Unlocks)
+### Resonance Chain System (Enhanced)
 
-### 1. Metaphysical Fields
-- After specific upgrade thresholds, concepts begin generating ambient fields
-- Fields influence nearby concepts based on philosophical relationships
-- Strategic placement creates harmonious or discordant interactions
-- Fields can be visualized through a toggle option
+Resonance chains now create persistent physical systems rather than just multipliers:
 
-### 2. Philosophical Schools
-- After discovering specific concept combinations, players can align with schools of thought
-- Each school provides unique bonuses and gameplay alterations:
-  - **Rationalism**: Enhanced Logos effects, improved energy from reasoned combinations
-  - **Empiricism**: Better physical interactions, collision bonuses
-  - **Idealism**: Strengthened concept formation, fusion benefits
-  - **Materialism**: Physical property enhancements, mass and momentum bonuses
+- **Circuit Chains**: Connect concepts in closed loops to create self-sustaining energy generators
+- **Constellation Patterns**: Form specific geometric arrangements for passive bonuses
+- **Dialectical Tensions**: Position opposing concepts in calibrated opposition to generate field effects
+- **Harmonic Lattices**: Build multi-layered grids of compatible concepts for exponential scaling
 
-### 3. Dialectical Synthesis
-- Advanced fusion mechanic unlocked after 10 successful fusions
-- Combine three concepts in a triangular arrangement
-- Creates powerful synthesis concepts that embody thesis-antithesis-synthesis
-- Requires careful timing and positioning
+### Hazard Systems
 
-### 4. Paradigm Shifts
-- Rare, system-wide events that temporarily transform all mechanics
-- Triggered after specific milestones or extended play
-- Completely changes the rules and relationships between concepts
-- Strategic adaptation required to maximize benefits
+Each domain introduces environmental challenges:
 
-## Game Flow
+- **Entropic Decay**: Spheres gradually lose energy and fade without regular activation
+- **Cognitive Dissonance Zones**: Areas where certain sphere types malfunction or behave unpredictably
+- **Paradigm Shifts**: Periodic events that scramble sphere properties and relationships
+- **Logical Fallacies**: Trap objects that create chain reaction explosions when triggered
+- **Dogmatic Barriers**: Walls that only allow certain concept types to pass through
 
-### Beginning Experience
-1. Player enters the experience and is presented with 8 basic philosophical concepts
-2. Tutorial guidance subtly introduces clicking and dragging mechanics
-3. First energy is harvested, introducing the concept of activation
-4. Shop becomes available after reaching 25 energy
-5. First achievement unlocked to introduce the achievement system
+## Progression & Mastery
 
-### Mid-Game Flow
-1. Player discovers resonance chains and begins optimizing combinations
-2. Shop upgrades enhance core mechanics, making energy generation more efficient
-3. First fusions create new concepts with unique properties
-4. Achievement progress provides secondary goals and rewards
-5. Multiple systems interact to create emergent gameplay
+### Metagame Progression
+- **Unlock new starter configurations** by achieving specific challenges
+- **Discover hidden concept combinations** that can be started with in future runs
+- **Expand the possibility space** by discovering rare upgrade types
 
-### Advanced Gameplay
-1. Player has discovered multiple concept combinations and understands resonances
-2. Strategic decisions about upgrade paths and concept development
-3. Advanced mechanics like Metaphysical Fields become available
-4. Philosophical Schools offer specialization choices
-5. Mastery challenges provide high-difficulty optional content
+### Mastery Goals
+- Complete runs with specific philosophical frameworks
+- Discover all possible sphere combinations
+- Master each epistemological school's unique mechanics
+- Achieve paradigm transcendence by balancing all systems perfectly
 
 ## Visual Design
 
-### Aesthetic
-- Clean, minimalist interface with focus on the spheres themselves
-- Rich gradient colors representing philosophical concepts
-- Particle effects that visualize abstract ideas
-- Subtle UI that doesn't distract from the core experience
+### Sphere Presentation
+- **Color gradients** represent philosophical lineage and compatibility
+- **Orbital auras** indicate current state and potential interactions
+- **Pulse frequency** shows energy potential and activation readiness
+- **Trails** reflect current influences and modifications
 
-### Feedback Systems
-- Dopamine-triggering visual and audio cues for activations
-- Clear indicators for energy gain, resonance chains, and achievements
-- Subtle pulses and glows to hint at potential interactions
-- Physics-based movement that feels satisfying and responsive
+### Environment Design
+- **Abstract thought-scapes** that visually represent the domain's philosophical framework
+- **Reactive backgrounds** that respond to dominant sphere types and upgrade choices
+- **Visual evolution** as the player's choices shape the nature of reality in their system
 
-## Audio Design (Future Enhancement)
+## Audiovisual Feedback
 
-### Sound Palette
-- Ambient, meditative background that evolves with gameplay
-- Harmonic tones for activation and resonance
-- Physical impact sounds for collisions
-- Achievement fanfares and milestone celebrations
+### Key Feedback Moments
+- **Sphere activation**: Distinct sound and visual effect based on sphere type and current modifications
+- **Resonance formation**: Harmonic tones that build as chains form, with visual connections
+- **System transformation**: Dramatic shift effects when major upgrades alter fundamental mechanics
+- **Domain transitions**: Audiovisual sequence representing philosophical evolution
 
-## Implementation Roadmap
+## Session Structure
 
-### Phase 1: Core Experience (Complete)
-- Basic philosophical concepts with physical properties
-- Energy harvesting and shop system
-- Resonance chains and achievement tracking
-- Fusion system for concept creation
+### Early Game (Domain 1)
+1. Begin with a balanced set of starter concepts
+2. Learn basic interactions and energy harvesting
+3. Encounter first shop with foundational upgrades that suggest potential paths
+4. Make initial strategic choices that will shape your run's direction
 
-### Phase 2: Depth Enhancement (Current)
-- Expanded fusion outcomes and philosophical connections
-- Enhanced visual and feedback systems
-- Tutorial improvements and player guidance
-- Balancing and pacing refinements
+### Mid Game (Domains 2-3)
+1. Adapt to the consequences of your upgrade choices
+2. Navigate increasingly complex hazards and requirements
+3. Build sophisticated sphere systems based on your evolving ruleset
+4. Make critical choices at upgrade shops that lock in your philosophical approach
 
-### Phase 3: Advanced Systems
-- Metaphysical Fields implementation
-- Philosophical Schools specialization
-- Dialectical Synthesis advanced mechanics
-- Expanded achievement system and goals
+### Late Game (Domains 4-5)
+1. Master the unique systems created by your upgrade path
+2. Optimize complex interactions between modified mechanics
+3. Navigate challenging environmental hazards that test your adaptation skills
+4. Face the final paradigm shift that challenges all aspects of your system
 
-### Phase 4: Mastery Content
-- Paradigm Shift events
-- Philosophical Codex documentation system
-- Challenge modes and mastery missions
-- Community features for sharing discoveries
+## Meta-Design Philosophy
 
-## Success Metrics
+The core design principle is "coherent emergence" - each run creates a unique yet internally consistent set of rules based on upgrade choices. Players experience different gameplay each time not through randomized content, but through fundamental shifts in how basic mechanics function.
 
-### Engagement Indicators
-- Time spent in active play
-- Number of concept activations
-- Upgrade purchases and strategic decisions
-- Fusion attempts and discoveries
+This creates a game that rewards:
+- Systemic thinking and adaptation
+- Creative problem-solving within constraints
+- Understanding the philosophical implications of game mechanics
+- Finding unexpected synergies between seemingly contradictory systems
 
-### Satisfaction Markers
-- Achievement completion rate
-- Progression through advanced mechanics
-- Return sessions and retention
-- Energy efficiency optimization
+## Example Run Scenario
 
-## Design Philosophy
-Esoteric Sphere aims to create a satisfying balance between:
-- **Contemplation and Action**: Meditative exploration with strategic decision-making
-- **Simplicity and Depth**: Easy to understand basics with emergent complexity
-- **Structure and Discovery**: Clear progression with room for experimentation
-- **Learning and Mastery**: Gradual introduction of concepts with high skill ceiling
+A player begins with a balanced set of concepts from various schools. In the first shop, they select "Chromatic Blindness (Red)" and "Holist Vision" upgrades.
+
+This creates a system where:
+- Red/orange concepts become invisible and unusable
+- Small concepts automatically combine into larger ones
+- The player must focus on blue/green/purple spheres
+- Fusion becomes a core mechanic rather than an option
+
+In the next domain, they choose "Quantum Uncertainty" and "Circuit Chains" upgrades, further specializing their run:
+- Their spheres now randomly teleport when not observed
+- They can create closed-loop resonance chains for passive energy
+- They must constantly adapt to the shifting positions of concepts
+- Their "blindness" to red concepts forces creative pathfinding
+
+By the final domain, they've created a completely unique philosophical framework that requires mastery of specific interactions between:
+- Automatic fusion of small concepts
+- Quantum teleportation of medium/large concepts
+- Circuit-based energy generation
+- Navigation around unusable red concept spaces
+
+This creates a cohesive experience unlike any other run, with clear mechanical distinctions and strategic depth emerging from the interaction of carefully chosen constraints.
 
