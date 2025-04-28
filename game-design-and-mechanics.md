@@ -15,16 +15,17 @@ Abstract Word Visualization is an interactive web-based experience that transfor
 - Each abstract word exists as a floating bubble in the space
 - Words have unique:
   - Colors (primary and secondary gradient)
-  - Size
+  - Size / Radius / Mass
   - Effect type
-  - Movement patterns
+  - Movement patterns (Physics-based: velocity, damping, random push, boundary collision, inter-word collision)
 
 ### Interaction Mechanics
-1. **Floating Animation**: Words gently float and rotate when not interacted with
-2. **Click Activation**: Clicking a word activates its special effect
-3. **Dragging**: Users can drag words around the screen
-4. **Trail Generation**: Dragging words leaves ephemeral trails behind
-5. **Effect Triggering**: Each word creates a unique visual effect when activated
+1. **Floating Animation**: Words gently float based on simple physics simulation (velocity, damping, small random forces). They bounce off screen edges and each other.
+2. **Click Activation**: Clicking (or tapping) a word activates its special effect. Activates only if not part of a drag action.
+3. **Dragging**: Users can drag words around the screen using mouse or touch. Dragging imparts velocity for a "throw" effect on release.
+4. **Trail Generation**: Dragging words leaves ephemeral trails behind.
+5. **Effect Triggering**: Each word creates a unique visual effect when activated (clicked/tapped).
+6. **Collision**: Words collide with each other realistically, based on their mass and bounciness (restitution). Overlapping words are pushed apart.
 
 ### Effect System
 Each word has a signature effect that represents its abstract meaning:
@@ -42,64 +43,62 @@ Each word has a signature effect that represents its abstract meaning:
 
 ## Visual Design
 - **Color Palette**: Vibrant, contrasting colors that pair well together
-- **Motion Design**: Smooth, fluid animations with organic easing functions
-- **Particle Effects**: Dynamic, procedurally-generated particle systems
-- **Minimalist UI**: Focus on the interaction rather than interface elements
+- **Motion Design**: Smooth, fluid animations with physics-based movement and organic easing functions.
+- **Particle Effects**: Dynamic, procedurally-generated particle systems for word activation effects.
+- **Minimalist UI**: Focus on the interaction rather than interface elements. Splash screen for entry.
 
 ## Audio Design (Future)
 - Ambient background soundscape
-- Unique sound for each word effect
-- Interactive audio that responds to user actions
+- Unique sound for each word effect activation
+- Sound cues for collisions (pitch/volume based on impact force?)
+- Interactive audio that responds to user actions (e.g., dragging speed)
 - Generative audio system tied to visual elements
 
 ## Progression Mechanics (Future)
 - Unlockable words/concepts
-- Effect combinations when words interact with each other
+- Effect combinations when words interact with each other (e.g., colliding words trigger combined/modified effects)
 - User-generated word creation system
 - Story/narrative elements revealed through interaction
 
 ## Technical Implementation
-- Modular component-based architecture
-- Effect manager system for handling various visual effects
-- Position and animation utilities
-- Core game engine with state management
-- Screen system for different modes/states
+- Modular component-based architecture (`Word`, `Trail`, etc.)
+- Effect manager system (`effectManager.js`) handling various visual effects (`explosion.js`, `spiral.js`, etc.)
+- Position and animation utilities (`position.js`)
+- Core game engine (`engine.js`) with state management, game loop, physics updates, and collision handling.
+- Screen system (`splash.js`, `game.js`) for different application states (splash, game).
+- Configuration constants (`constants.js`).
 
 ## Expansion Roadmap
 
-### Phase 1: Core Experience (Current)
-- Basic word interactions
-- Individual word effects
-- Simple physics and movement
+### Phase 1: Core Experience (Mostly Complete)
+- Basic word properties (color, size, text, mass)
+- Splash screen entry
+- Physics-based floating and boundary collision
+- Click/Tap activation of individual word effects
+- Drag and Throw interaction
+- Trail generation during drag
+- Basic Word-Word Collision (Detection and Response)
 
-### Phase 2: Enhanced Interaction
-- Word collision and interaction
-- Effect combinations
-- Improved physics and movement
-- Audio implementation
+### Phase 2: Enhanced Interaction & Polish
+- Effect combinations (e.g., triggered on collision)
+- Collision Effects (visual cue on impact)
+- Improved physics (e.g., rotational velocity, friction?)
+- Audio implementation (background, activation, collision sounds)
+- Performance optimization for many words/effects
 
 ### Phase 3: Progression System
-- User accounts
+- User accounts (optional, perhaps local storage first)
 - Word unlocking mechanics
 - Achievement system
-- Personal word creation
+- Personal word creation/customization
 
 ### Phase 4: Social Features
-- Shared spaces
+- Shared spaces (e.g., using WebSockets)
 - Collaborative creation
 - Community galleries
 
 ## Design Principles
 1. **Discovery over Instruction**: Let users learn through play
 2. **Beauty in Abstraction**: Embrace the abstract nature of the concepts
-3. **Responsive Feedback**: Every action should have a satisfying response
-4. **Accessibility**: Design for users with different abilities
-5. **Performance First**: Maintain smooth performance even with complex effects
-
-## Technical Challenges
-- Optimizing particle effects for performance
-- Creating natural-feeling physics
-- Balancing visual complexity with readability
-- Implementing effect combinations
-- Creating a scalable architecture
+3. **Responsive Feedback**: Every
 

@@ -7,6 +7,7 @@ export class Word {
         this.id = data.id;
         this.text = data.text;
         this.size = data.size;
+        this.radius = this.size / 2; // Add radius property
         this.colors = data.colors;
         this.container = container;
         this.element = null;
@@ -19,6 +20,8 @@ export class Word {
         this.damping = 0.98; // Damping factor for slowing down
         this.pushForce = 0.05; // Gentle floating force magnitude
         this.maxSpeed = 3; // Maximum speed for floating
+        this.mass = Math.PI * this.radius * this.radius; // Mass proportional to area
+        this.restitution = 0.85; // Bounciness factor for collisions
 
         // Dragging state
         this.isDragging = false;
@@ -26,6 +29,7 @@ export class Word {
         this.dragOffsetY = 0;
         this.lastMouseX = 0;
         this.lastMouseY = 0;
+        this.dragMoved = false; // Track if drag resulted in movement
 
         this.init();
     }
@@ -44,11 +48,13 @@ export class Word {
         this.element.style.position = 'absolute'; // Ensure position is absolute
 
         // Position randomly and store coordinates
+        // Ensure no initial overlap - this requires checking against other words,
+        // which is easier to handle in the engine after all words are created.
+        // For now, simple random positioning.
         const initialPosition = getRandomPosition(this.element, this.container);
         this.x = initialPosition.x;
         this.y = initialPosition.y;
-        this.element.style.left = `${this.x}px`;
-        this.element.style.top = `${this.y}px`;
+        this.updateElementPosition(); // Use a helper to set style
 
         // Add to container
         this.container.appendChild(this.element);
@@ -64,6 +70,8 @@ export class Word {
              if (!this.dragMoved) {
                 this.activate();
             }
+            // Reset dragMoved flag after click/mouseup logic
+            this.dragMoved = false;
         });
 
         // Drag events
@@ -72,8 +80,16 @@ export class Word {
         window.addEventListener('mousemove', (e) => this.drag(e));
         window.addEventListener('mouseup', (e) => this.endDrag(e));
         // Touch events for mobile
-        this.element.addEventListener('touchstart', (e) => this.startDrag(e.touches[0]), { passive: false });
-        window.addEventListener('touchmove', (e) => this.drag(e.touches[0]), { passive: false });
+        this.element.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent default touch behavior like scrolling
+            this.startDrag(e.touches[0]);
+        }, { passive: false });
+        window.addEventListener('touchmove', (e) => {
+             if (this.isDragging) {
+                 e.preventDefault(); // Prevent scrolling while dragging
+                 this.drag(e.touches[0]);
+             }
+        }, { passive: false });
         window.addEventListener('touchend', (e) => this.endDrag(e.changedTouches[0]));
     }
 
@@ -94,6 +110,12 @@ export class Word {
             this.vx = (this.vx / speed) * this.maxSpeed;
             this.vy = (this.vy / speed) * this.maxSpeed;
         }
+         // Ensure tiny velocities are zeroed out to prevent perpetual creep
+        const minSpeed = 0.01;
+        if (speed < minSpeed) {
+            this.vx = 0;
+            this.vy = 0;
+        }
 
         // Update position
         this.x += this.vx * dt;
@@ -101,54 +123,55 @@ export class Word {
 
         // Boundary collision detection
         const containerRect = this.container.getBoundingClientRect();
-        const elementRect = this.element.getBoundingClientRect(); // Use current rect for size
+        // Use this.radius for collision checks
+        const leftBoundary = 0;
+        const rightBoundary = containerRect.width - this.size;
+        const topBoundary = 0;
+        const bottomBoundary = containerRect.height - this.size;
 
-        if (this.x < 0) {
-            this.x = 0;
-            this.vx *= -0.8; // Bounce with energy loss
-        } else if (this.x + elementRect.width > containerRect.width) {
-            this.x = containerRect.width - elementRect.width;
-            this.vx *= -0.8;
+        if (this.x < leftBoundary) {
+            this.x = leftBoundary;
+            this.vx *= -this.restitution; // Bounce with energy loss based on restitution
+        } else if (this.x > rightBoundary) {
+            this.x = rightBoundary;
+            this.vx *= -this.restitution;
         }
 
-        if (this.y < 0) {
-            this.y = 0;
-            this.vy *= -0.8;
-        } else if (this.y + elementRect.height > containerRect.height) {
-            this.y = containerRect.height - elementRect.height;
-            this.vy *= -0.8;
+        if (this.y < topBoundary) {
+            this.y = topBoundary;
+            this.vy *= -this.restitution;
+        } else if (this.y > bottomBoundary) {
+            this.y = bottomBoundary;
+            this.vy *= -this.restitution;
         }
-
 
         // Apply position to element style
-        this.element.style.transform = `translate(${this.x - parseFloat(this.element.style.left || 0)}px, ${this.y - parseFloat(this.element.style.top || 0)}px)`;
-        // Update base position less frequently or use transform only
-        // For simplicity now, we'll just use transform for physics movement
-         this.element.style.left = `${this.x}px`;
-         this.element.style.top = `${this.y}px`;
-         this.element.style.transform = `translate(0, 0)`; // Reset transform after applying to left/top
-
-        // Add subtle rotation based on velocity? Maybe later.
+        this.updateElementPosition();
     }
 
+    // Helper function to update element's style based on physics properties
+    updateElementPosition() {
+         // Using translate for smoother animation
+         this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
+         // Keep left/top at 0,0 since we use transform
+         this.element.style.left = `0px`;
+         this.element.style.top = `0px`;
+    }
 
     activate() {
         if (this.element.classList.contains('active')) return; // Don't reactivate if already active
 
-        // Remove active class from all other words potentially
-        // document.querySelectorAll('.word.active').forEach(word => word.classList.remove('active'));
-
         this.element.classList.add('active');
 
-        // Create special effect at the center
-        const rect = this.element.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
+        // Create special effect at the center of the element
+        // Get position from physics state, not bounding client rect, as transform affects it
+        const centerX = this.x + this.radius;
+        const centerY = this.y + this.radius;
         createSpecialEffect(this.id, centerX, centerY, this.colors.primary);
 
         // Reset visual state after animation duration
         setTimeout(() => {
-            if (this.element) { // Check if element still exists
+            if (this.element && this.element.classList.contains('active')) { // Check if still active
                this.element.classList.remove('active');
             }
         }, 1500); // Shorter active state visual
@@ -156,53 +179,69 @@ export class Word {
 
     startDrag(e) {
         this.isDragging = true;
-        this.dragMoved = false; // Flag to check if drag actually moved
-        this.element.classList.add('dragging'); // Add dragging class for potential style changes
-        // Calculate offset from the element's current *visual* center
-        const rect = this.element.getBoundingClientRect();
-        this.dragOffsetX = e.clientX - (rect.left + rect.width / 2);
-        this.dragOffsetY = e.clientY - (rect.top + rect.height / 2);
+        this.dragMoved = false; // Reset drag moved flag
+        this.element.classList.add('dragging');
+        // Calculate offset from the element's *physics* center (x + radius, y + radius)
+        // ClientX/Y are relative to viewport, convert physics coords if needed,
+        // but since container fills viewport and x/y are relative to container, it should be fine.
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+        this.dragOffsetX = clientX - (this.x + this.radius);
+        this.dragOffsetY = clientY - (this.y + this.radius);
         this.vx = 0; // Stop physics movement
         this.vy = 0;
-        this.lastMouseX = e.clientX;
-        this.lastMouseY = e.clientY;
+        this.lastMouseX = clientX;
+        this.lastMouseY = clientY;
         // Bring to front
         this.element.style.zIndex = 100;
     }
 
     drag(e) {
         if (!this.isDragging) return;
-        this.dragMoved = true; // Mark as moved
 
         const currentMouseX = e.clientX;
         const currentMouseY = e.clientY;
 
-        // Calculate new desired center position
-        let newX = currentMouseX - this.dragOffsetX;
-        let newY = currentMouseY - this.dragOffsetY;
+        // Calculate distance moved to check if it's a real drag vs a click
+        const dx = currentMouseX - this.lastMouseX;
+        const dy = currentMouseY - this.lastMouseY;
+        if (Math.sqrt(dx*dx + dy*dy) > 2) { // Threshold to consider it moved
+             this.dragMoved = true;
+        }
+
+        // Calculate new desired physics center position
+        let newCenterX = currentMouseX - this.dragOffsetX;
+        let newCenterY = currentMouseY - this.dragOffsetY;
 
         // Calculate velocity based on mouse movement delta
-        // We apply this velocity on endDrag
-        this.vx = (currentMouseX - this.lastMouseX) * 0.5; // Multiply for smoother throw
-        this.vy = (currentMouseY - this.lastMouseY) * 0.5;
+        // Apply smoothing/scaling factor for better feel
+        const throwFactor = 0.8;
+        this.vx = dx * throwFactor;
+        this.vy = dy * throwFactor;
 
+        // Update element's physics position (top-left corner)
+        this.x = newCenterX - this.radius;
+        this.y = newCenterY - this.radius;
 
-        // Update element's position directly (center-based)
-        const elementRect = this.element.getBoundingClientRect();
-        this.x = newX - elementRect.width / 2;
-        this.y = newY - elementRect.height / 2;
+        // Clamp position to container boundaries during drag
+        const containerRect = this.container.getBoundingClientRect();
+        const leftBoundary = 0;
+        const rightBoundary = containerRect.width - this.size;
+        const topBoundary = 0;
+        const bottomBoundary = containerRect.height - this.size;
+
+        this.x = Math.max(leftBoundary, Math.min(this.x, rightBoundary));
+        this.y = Math.max(topBoundary, Math.min(this.y, bottomBoundary));
 
         // Update element style immediately for responsiveness
-        this.element.style.left = `${this.x}px`;
-        this.element.style.top = `${this.y}px`;
-        this.element.style.transform = `translate(0, 0)`; // Clear transform if we set left/top
+        this.updateElementPosition();
 
         // Store current mouse position for next frame's velocity calculation
         this.lastMouseX = currentMouseX;
         this.lastMouseY = currentMouseY;
 
-        // Create trail (use current mouse position for trail start)
-        createTrail(currentMouseX, currentMouseY, this.element, this.container);
+        // Create trail (use current physics center for trail position)
+        createTrail(this.x + this.radius, this.y + this.radius, this.element, this.container);
     }
 
     endDrag(e) {
@@ -214,10 +253,25 @@ export class Word {
             // If the drag didn't move much, treat it as a click
             if (!this.dragMoved) {
                  this.activate();
+            } else {
+                // Velocity is already calculated during drag based on last movement
+                // Clamp velocity if it's too high after a fast drag/throw
+                 const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                 const maxThrowSpeed = this.maxSpeed * 3; // Allow throwing faster than normal max speed
+                 if (speed > maxThrowSpeed) {
+                    this.vx = (this.vx / speed) * maxThrowSpeed;
+                    this.vy = (this.vy / speed) * maxThrowSpeed;
+                 }
             }
-
-            // Velocity is already calculated during drag based on last movement
-            // Physics simulation will take over in the next update() call
+            // Physics simulation will take over in the next update() call with the calculated vx, vy
         }
+        // Reset dragMoved flag after interaction ends
+        this.dragMoved = false;
+    }
+
+    // Method to apply impulse from collision
+    applyImpulse(impulseX, impulseY) {
+        this.vx += impulseX / this.mass;
+        this.vy += impulseY / this.mass;
     }
 }
