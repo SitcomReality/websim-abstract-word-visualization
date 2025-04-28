@@ -48,7 +48,7 @@ export class Engine {
         };
         this.lastCollisionTime = 0;
         this.collisionCooldown = PHYSICS_CONFIG.COLLISION_COOLDOWN; // Maybe move to Physics?
-        
+
         // Tutorial system
         this.tutorialHintElement = null;
     }
@@ -58,11 +58,11 @@ export class Engine {
         initSplashScreen(this.screenManager.showGameScreen.bind(this.screenManager));
         // Initialize Shop System (fetches elements, sets up listeners)
         this.shopSystem.initShop();
-        
+
         // Create tutorial hint element
         this.createTutorialHintElement();
     }
-    
+
     createTutorialHintElement() {
         this.tutorialHintElement = document.createElement('div');
         this.tutorialHintElement.id = 'tutorial-hint';
@@ -82,18 +82,18 @@ export class Engine {
         this.tutorialHintElement.style.pointerEvents = 'none';
         document.body.appendChild(this.tutorialHintElement);
     }
-    
+
     showTutorialHint(message) {
         if (!this.tutorialHintElement) return;
-        
+
         this.tutorialHintElement.textContent = message;
         this.tutorialHintElement.style.opacity = '1';
-        
+
         setTimeout(() => {
             this.hideTutorialHint();
         }, 6000);
     }
-    
+
     hideTutorialHint() {
         if (!this.tutorialHintElement) return;
         this.tutorialHintElement.style.opacity = '0';
@@ -112,7 +112,7 @@ export class Engine {
         this.gameState.active = true;
         this.lastTimestamp = performance.now();
         console.log("Starting game loop");
-        
+
         // Initial tutorial hint
         if (this.gameState.tutorialStep === 0) {
             setTimeout(() => {
@@ -142,7 +142,7 @@ export class Engine {
         // Start the loop
         requestAnimationFrame(loop);
     }
-    
+
     // Delegate energy addition to the EnergyManager
     addEnergy(amount) {
         if (this.energyManager) {
@@ -151,7 +151,7 @@ export class Engine {
             console.error("EnergyManager not initialized!");
         }
     }
-    
+
     // Getter for current energy
     get currentEnergy() {
         return this.energyManager ? this.energyManager.getEnergy() : 0;
@@ -168,12 +168,13 @@ export class Engine {
 
         // Handle collisions via Physics module
         this.physics.handleCollisions(activeWords, this.container);
-        
+
         // Update resonance system if it exists
         if (this.resonanceSystem) {
-            this.resonanceSystem.updateResonanceDisplay();
+            this.resonanceSystem.updateResonanceDisplay(); // Updates the UI panel
+            this.resonanceSystem.updateConnectionVisuals(dt); // Updates the connection lines
         }
-        
+
         // Check achievements periodically
         if (Math.random() < 0.05) { // Check about once every 20 frames
             this.achievementSystem.checkAchievements();
@@ -184,27 +185,27 @@ export class Engine {
         console.log("Requesting game loop stop");
         this.gameState.active = false;
     }
-    
+
     // Record discovered philosophical concepts
     recordDiscovery(conceptId) {
         if (!this.gameState.discoveredConcepts.includes(conceptId)) {
             this.gameState.discoveredConcepts.push(conceptId);
             console.log(`New philosophical concept discovered: ${conceptId}`);
-            
+
             // Show discovery notification
             this.showDiscoveryNotification(conceptId);
-            
+
             // Check for milestone achievements
             if (this.gameState.discoveredConcepts.length === 5) {
                 // Could add achievement: "Philosophical Mind" - Discover 5 concepts
             }
         }
     }
-    
+
     showDiscoveryNotification(conceptId) {
         const container = document.getElementById('game-screen');
         if (!container) return;
-        
+
         const notification = document.createElement('div');
         notification.className = 'discovery-notification';
         notification.innerHTML = `
@@ -214,7 +215,7 @@ export class Engine {
                 <div class="discovery-name">${conceptId}</div>
             </div>
         `;
-        
+
         notification.style.position = 'fixed';
         notification.style.top = '30%';
         notification.style.left = '50%';
@@ -231,7 +232,7 @@ export class Engine {
         notification.style.opacity = '0';
         notification.style.minWidth = '300px';
         container.appendChild(notification);
-        
+
         // Animate entry
         notification.animate([
             { opacity: 0, transform: 'translate(-50%, -50%) scale(0.8)' },
@@ -240,8 +241,11 @@ export class Engine {
         ], {
             duration: 1000,
             easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)'
-        });
-        
+        }).onfinish = () => {
+             notification.style.opacity = '1'; // Ensure opacity is set after animation
+             notification.style.transform = 'translate(-50%, -50%) scale(1)';
+         };
+
         setTimeout(() => {
             notification.animate([
                 { opacity: 1, transform: 'translate(-50%, -50%) scale(1)' },

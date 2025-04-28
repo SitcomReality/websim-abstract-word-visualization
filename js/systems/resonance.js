@@ -33,6 +33,13 @@ export class ResonanceSystem {
 
         this.resonanceDisplay = null;
         this.initResonanceDisplay();
+
+        // --- New properties for connection visuals ---
+        this.connections = []; // Stores { word1, word2, color, element }
+        this.connectionUpdateTimer = 0;
+        this.connectionVisibleDuration = 100; // ms - How long the line stays visible after update
+        this.connectionUpdateInterval = 250; // ms - How often to update and show the line
+        // --- End new properties ---
     }
 
     initResonanceDisplay() {
@@ -51,7 +58,8 @@ export class ResonanceSystem {
         if (!this.lastActivatedWord || word === this.lastActivatedWord) {
             this.lastActivatedWord = word;
             this.startChainTimer();
-            this.clearVisuals();
+            this.clearAllConnectionVisuals(); // Clear connections if starting new chain
+            this.updateAllWordVisuals(); // Update indicators based on new last word
             return 1;
         }
 
@@ -86,8 +94,8 @@ export class ResonanceSystem {
                 chain.words.push(word);
                 // Increase multiplier, but maybe cap it or have diminishing returns?
                 chain.multiplier = parseFloat((chain.multiplier + 0.2).toFixed(1));
-                // Create visual connection only when adding a NEW word to the chain
-                this.showConnectionEffect(this.lastActivatedWord, word, chainType.color);
+                // Create visual connection when adding a NEW word to the chain
+                this.createConnectionVisual(this.lastActivatedWord, word, chainType.color);
             }
 
             this.lastActivatedWord = word;
@@ -97,10 +105,8 @@ export class ResonanceSystem {
         } else {
              // Chain broken or different type attempted
             this.lastActivatedWord = word;
-            this.activeChains = []; // Clear all active chains if the sequence is broken
-            this.clearChainTimer();
+            this.clearAllChainsAndVisuals(); // Clear chains and connections
             this.startChainTimer(); // Start timer for the new single word
-            this.updateResonanceDisplay();
             currentMultiplier = 1;
         }
 
@@ -110,7 +116,7 @@ export class ResonanceSystem {
     }
 
     canFormResonance(word) {
-        if (!this.lastActivatedWord || word === this.lastActivatedWord) return false;
+        if (!this.lastActivatedWord || word === this.lastActivatedWord || !this.lastActivatedWord.element || !word.element) return false;
 
         const chainKey1 = `${this.lastActivatedWord.id}_${word.id}`;
         const chainKey2 = `${word.id}_${this.lastActivatedWord.id}`;
@@ -128,23 +134,18 @@ export class ResonanceSystem {
         this.clearChainTimer();
         this.activationTimeout = setTimeout(() => {
             console.log("Resonance chain decayed.");
-            this.lastActivatedWord = null;
-            this.activeChains = [];
-            this.updateResonanceDisplay();
-            this.clearVisuals();
-            this.updateAllWordVisuals(); // Ensure resonance indicators are cleared
+            this.clearAllChainsAndVisuals();
         }, this.chainDecayTime);
     }
 
-    clearVisuals() {
-        if (this.engine && this.engine.gameState && this.engine.gameState.words) {
-            this.engine.gameState.words.forEach(w => {
-                if (w.element) {
-                    w.element.classList.remove('resonance-ready');
-                }
-            });
-        }
+    clearAllChainsAndVisuals() {
+        this.lastActivatedWord = null;
+        this.activeChains = [];
+        this.clearAllConnectionVisuals();
+        this.updateResonanceDisplay();
+        this.updateAllWordVisuals(); // Ensure resonance indicators are cleared
     }
+
 
     updateAllWordVisuals() {
         if (this.engine && this.engine.gameState && this.engine.gameState.words) {
@@ -199,49 +200,117 @@ export class ResonanceSystem {
         }
     }
 
-    showConnectionEffect(word1, word2, color) {
+    // --- New Connection Visual Logic ---
+
+    createConnectionVisual(word1, word2, color) {
         const container = this.engine.container;
         if (!container || !word1 || !word2 || !word1.element || !word2.element) return;
 
-        const x1 = word1.x + word1.radius;
-        const y1 = word1.y + word1.radius;
-        const x2 = word2.x + word2.radius;
-        const y2 = word2.y + word2.radius;
+        const connectionElement = document.createElement('div');
+        connectionElement.className = 'resonance-connection';
+        connectionElement.style.position = 'absolute';
+        connectionElement.style.height = '3px'; // Line thickness
+        connectionElement.style.background = `linear-gradient(to right, transparent, ${color}ff, transparent)`;
+        connectionElement.style.transformOrigin = '0 50%';
+        connectionElement.style.opacity = '0'; // Start invisible
+        connectionElement.style.zIndex = '95';
+        connectionElement.style.pointerEvents = 'none';
+        connectionElement.style.borderRadius = '2px';
+        // Add transition for smooth fade in/out
+        connectionElement.style.transition = `opacity ${this.connectionVisibleDuration / 1000}s ease-out`;
 
-        const connection = document.createElement('div');
-        connection.className = 'resonance-connection';
+        container.appendChild(connectionElement);
 
-        const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-        const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
-
-        connection.style.position = 'absolute';
-        connection.style.width = `${length}px`;
-        connection.style.height = '3px';
-        connection.style.background = `linear-gradient(to right, ${color}66, ${color}ff, ${color}66)`;
-        connection.style.left = `${x1}px`;
-        connection.style.top = `${y1}px`;
-        connection.style.transformOrigin = '0 50%';
-        connection.style.transform = `rotate(${angle}deg)`;
-        connection.style.opacity = '0.7';
-        connection.style.zIndex = '95';
-        connection.style.pointerEvents = 'none';
-        connection.style.borderRadius = '2px';
-        container.appendChild(connection);
-
-        // Animate the connection line to fade out and disappear
-        connection.animate([
-            { opacity: 0.7, transform: `rotate(${angle}deg) scaleY(1)` },
-            { opacity: 0, transform: `rotate(${angle}deg) scaleY(0)` } // Fade out by scaling Y to 0
-        ], {
-            duration: 800, // Duration of the fade effect
-            easing: 'ease-out' // Smooth fading
-        }).onfinish = () => {
-            // Remove the element from the DOM after the animation completes
-            if (container.contains(connection)) {
-                container.removeChild(connection);
-            }
-        };
+        this.connections.push({
+            word1,
+            word2,
+            color,
+            element: connectionElement,
+            visibleTimeout: null // Store timeout reference
+        });
     }
+
+    updateConnectionVisuals(dt) {
+        const container = this.engine.container;
+        if (!container) return;
+
+        this.connectionUpdateTimer += dt * 1000; // dt is in seconds
+
+        // Check if it's time to update and flash the connections
+        const needsUpdate = this.connectionUpdateTimer >= this.connectionUpdateInterval;
+
+        // Filter out connections where a word no longer exists or its element is gone
+        this.connections = this.connections.filter(conn => {
+            if (!conn.word1 || !conn.word1.element || conn.word1.isBeingDestroyed ||
+                !conn.word2 || !conn.word2.element || conn.word2.isBeingDestroyed) {
+                // Word is gone, remove the element immediately
+                if (conn.element && container.contains(conn.element)) {
+                    container.removeChild(conn.element);
+                }
+                 if (conn.visibleTimeout) clearTimeout(conn.visibleTimeout); // Clear any pending fade-out
+                return false; // Remove from connections array
+            }
+            return true; // Keep the connection
+        });
+
+        if (needsUpdate) {
+             this.connectionUpdateTimer = 0; // Reset timer
+
+             this.connections.forEach(conn => {
+                 // Ensure elements still exist before proceeding
+                 if (!conn.element || !conn.word1.element || !conn.word2.element) return;
+
+                 const x1 = conn.word1.x + conn.word1.radius;
+                 const y1 = conn.word1.y + conn.word1.radius;
+                 const x2 = conn.word2.x + conn.word2.radius;
+                 const y2 = conn.word2.y + conn.word2.radius;
+
+                 const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                 const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+                 // Update position and appearance
+                 conn.element.style.left = `${x1}px`;
+                 conn.element.style.top = `${y1}px`;
+                 conn.element.style.width = `${length}px`;
+                 conn.element.style.transform = `rotate(${angle}deg)`;
+                 conn.element.style.background = `linear-gradient(to right, transparent, ${conn.color}ff, transparent)`; // Update color just in case
+
+                 // Make it visible
+                 conn.element.style.opacity = '0.7';
+
+                 // Clear any previous timeout to hide it
+                 if (conn.visibleTimeout) {
+                     clearTimeout(conn.visibleTimeout);
+                 }
+
+                 // Set a new timeout to hide it again
+                 conn.visibleTimeout = setTimeout(() => {
+                     if (conn.element) { // Check if element still exists
+                         conn.element.style.opacity = '0';
+                     }
+                     conn.visibleTimeout = null; // Clear timeout reference
+                 }, this.connectionVisibleDuration);
+             });
+        }
+    }
+
+    clearAllConnectionVisuals() {
+        const container = this.engine.container;
+        if (!container) return;
+
+        this.connections.forEach(conn => {
+            if (conn.element && container.contains(conn.element)) {
+                container.removeChild(conn.element);
+            }
+            if (conn.visibleTimeout) {
+                clearTimeout(conn.visibleTimeout);
+            }
+        });
+        this.connections = []; // Clear the array
+        this.connectionUpdateTimer = 0; // Reset timer
+    }
+
+    // --- End New Connection Visual Logic ---
 
     updateResonanceDisplay() {
         if (!this.resonanceDisplay) return;
