@@ -1,387 +1,99 @@
-import { PHYSICS_CONFIG } from 'config/constants.js';
-import { COLORS } from 'config/constants.js'; // Import COLORS
-import { Word } from 'components/Word.js'; // Needed for Reductionist Toolkit
+import { UPGRADE_DEFINITIONS } from './upgrades/upgradeDefinitions.js';
 
 export class UpgradeSystem {
     constructor(engine) {
         this.engine = engine;
-        this.currentLevels = {}; // Store current level of each upgrade centrally
-        UpgradeSystem.UPGRADE_DEFINITIONS.forEach(upgrade => {
+        this.currentLevels = {};
+        UPGRADE_DEFINITIONS.forEach(upgrade => {
             this.currentLevels[upgrade.id] = 0;
         });
-        console.log("Upgrade System Initialized with levels:", this.currentLevels);
+        this.definitions = UPGRADE_DEFINITIONS;
     }
 
-    // Define upgrade types and their effects
-    // Static definition remains, used by ShopSystem and UpgradeSystem instance
-    static UPGRADE_DEFINITIONS = [
-        // --- Existing Upgrades (modified for consistency) ---
-        {
-            id: 'energy_boost',
-            name: 'Energy Surge',
-            description: 'Increases base energy gained per word activation.',
-            cost: 25,
-            maxLevel: 5,
-            applyEffect: (engine, level) => {
-                console.log(`Applying Energy Surge Level ${level}`);
-                engine.gameState.words.forEach(word => {
-                    // Ensure base potential exists before modifying
-                    if (word.baseEnergyPotential === undefined) word.baseEnergyPotential = word.energyPotential;
-                    word.energyPotential = word.baseEnergyPotential * Math.pow(1.15, level); // 15% increase per level
-                });
-            }
-        },
-        {
-            id: 'collision_power',
-            name: 'Kinetic Amplifier',
-            description: 'Increases energy generated from collisions.',
-            cost: 50,
-            maxLevel: 3,
-            applyEffect: (engine, level) => {
-                console.log(`Applying Kinetic Amplifier Level ${level}`);
-                engine.physics.collisionEnergyMultiplier = 1 + level * 0.75; // Stronger effect: +75% per level
-            }
-        },
-        {
-            id: 'fusion_chance',
-            name: 'Lexical Affinity',
-            description: 'Increases the chance of successful word fusion.',
-            cost: 100,
-            maxLevel: 4,
-            applyEffect: (engine, level) => {
-                console.log(`Applying Lexical Affinity Level ${level}`);
-                engine.fusionSuccessRateModifier = 1 + level * 0.2; // +20% chance per level
-            }
-        },
-        {
-            id: 'physics_restitution',
-            name: 'Elasticity Enhancement',
-            description: 'Makes words bouncier.',
-            cost: 40,
-            maxLevel: 3,
-            applyEffect: (engine, level) => {
-                console.log(`Applying Elasticity Enhancement Level ${level}`);
-                const baseRestitution = PHYSICS_CONFIG.RESTITUTION_RANGE[0]; // Original base
-                const increasePerLevel = 0.05; // Increase max restitution per level
-                const maxRestitution = Math.min(0.99, PHYSICS_CONFIG.RESTITUTION_RANGE[1] + level * increasePerLevel);
+    static get UPGRADE_DEFINITIONS() {
+        return UPGRADE_DEFINITIONS;
+    }
 
-                engine.gameState.words.forEach(word => {
-                    // Recalculate restitution based on new potential range
-                    // Restore base first if it exists
-                    const originalBase = word.physics?.baseRestitution || baseRestitution; // Access via physics component
-                    const randomFactor = Math.random() * (maxRestitution - originalBase);
-                    word.restitution = Math.min(maxRestitution, originalBase + randomFactor);
-                });
-            }
-        },
-        {
-            id: 'resonance_duration',
-            name: 'Harmonic Resonator',
-            description: 'Extends the duration of resonance chains.',
-            cost: 75,
-            maxLevel: 3,
-            applyEffect: (engine, level) => {
-                if (engine.resonanceSystem) {
-                    const baseDuration = engine.resonanceSystem.baseChainDecayTime || 6000;
-                    engine.resonanceSystem.chainDecayTime = baseDuration + (level * 2500); // +2.5s per level
-                }
-            }
-        },
-        {
-            id: 'resonance_power',
-            name: 'Resonance Amplifier',
-            description: 'Increases the power of resonance chain multipliers.',
-            cost: 90,
-            maxLevel: 3,
-            applyEffect: (engine, level) => {
-                if (engine.resonanceSystem) {
-                    const increase = level * 0.3; // +0.3 base multiplier per level
-                    for (const type in engine.resonanceSystem.chainTypes) {
-                        const chainType = engine.resonanceSystem.chainTypes[type];
-                        // Assume base multiplier is stored somewhere or calculate from initial state
-                        const baseMultiplier = chainType.baseMultiplier || chainType.multiplier; // Need to store baseMultiplier on init
-                        chainType.multiplier = baseMultiplier + increase;
-                    }
-                }
-            }
-        },
-        // --- GDD Transformative / Constraint Upgrades ---
-        {
-            id: 'chromatic_blindness_red',
-            name: 'Chromatic Blindness (Red)',
-            description: 'Cannot interact with Red/Orange (Rationalism) spheres. Other spheres generate 4x energy.',
-            cost: 150,
-            maxLevel: 1, // One-time purchase
-            applyEffect: (engine, level) => {
-                if (level === 1) {
-                    console.log("Applying Chromatic Blindness (Red)");
-                    engine.gameState.chromaticBlindnessColor = 'Rationalism'; // Store the affected school name
-                    // Re-evaluate visibility of all words
-                    engine.gameState.words.forEach(word => word.updateVisibility());
-                    // Note: The 4x energy effect is applied in WordActivation.calculateMultipliers
-                }
-            }
-        },
-         {
-            id: 'chromatic_blindness_blue',
-            name: 'Chromatic Blindness (Blue)',
-            description: 'Cannot interact with Blue/Green (Empiricism) spheres. Other spheres generate 4x energy.',
-            cost: 150,
-            maxLevel: 1,
-            applyEffect: (engine, level) => {
-                 if (level === 1) {
-                    console.log("Applying Chromatic Blindness (Blue)");
-                    engine.gameState.chromaticBlindnessColor = 'Empiricism';
-                    engine.gameState.words.forEach(word => word.updateVisibility());
-                }
-            }
-        },
-        {
-            id: 'quantum_uncertainty',
-            name: 'Quantum Uncertainty',
-            description: 'Spheres randomly teleport short distances when not observed (cursor not hovering). Each teleport has a 20% chance to grant 5 energy.',
-            cost: 200,
-            maxLevel: 1,
-            applyEffect: (engine, level) => {
-                 if (level === 1) {
-                    console.log("Applying Quantum Uncertainty");
-                    engine.gameState.quantumUncertaintyActive = true;
-                    // Logic applied in WordPhysics.updatePhysics
-                }
-            }
-        },
-        {
-            id: 'skeptical_method',
-            name: 'Skeptical Method',
-            description: '30% chance for any activation to fail (no energy/effect). Successful activations have 3x energy potential.',
-            cost: 180,
-            maxLevel: 1,
-            applyEffect: (engine, level) => {
-                if (level === 1) {
-                    console.log("Applying Skeptical Method");
-                    engine.gameState.skepticalMethodActive = true;
-                    // Logic applied in WordActivation.activate
-                }
-            }
-        },
-        {
-            id: 'deterministic_universe',
-            name: 'Deterministic Universe',
-            description: 'Spheres follow fixed paths after being set in motion (no random movement, stop on collision/boundary). Collisions are predictable.',
-            cost: 120,
-            maxLevel: 1,
-            applyEffect: (engine, level) => {
-                 if (level === 1) {
-                    console.log("Applying Deterministic Universe");
-                    engine.gameState.deterministicUniverseActive = true;
-                    // Stop random push force and modify collision response in WordBehavior/Physics
-                     engine.gameState.words.forEach(word => {
-                         word.vx = 0; // Stop existing motion to fit theme
-                         word.vy = 0;
-                     });
-                }
-            }
-        },
-        {
-            id: 'eternalism',
-            name: 'Eternalism',
-            description: 'Time effects are eliminated. All cooldowns are removed, but energy generation is reduced by 40%.',
-            cost: 130,
-            maxLevel: 1,
-            applyEffect: (engine, level) => {
-                if (level === 1) {
-                    console.log("Applying Eternalism");
-                    engine.gameState.eternalismActive = true;
-                    // Effect is applied in WordActivation.activate
-                }
-            }
-        },
-        {
-            id: 'categorical_imperative',
-            name: 'Categorical Imperative',
-            description: 'Must activate spheres in strict size order (Micro→Meso→Macro). Completed sequences grant massive (3x) energy bonuses.',
-            cost: 175,
-            maxLevel: 1,
-            applyEffect: (engine, level) => {
-                if (level === 1) {
-                    console.log("Applying Categorical Imperative");
-                    engine.gameState.categoricalImperativeActive = true;
-                    engine.gameState.categoricalSequence = {
-                        current: null, // Current category in sequence - DEPRECATED
-                        lastWord: null, // Last activated word - DEPRECATED
-                        stepsComplete: 0, // Steps completed in sequence
-                        categories: ['Micro', 'Meso', 'Macro'], // Order of categories
-                        justCompleted: false // Flag for bonus energy
-                    };
-                    // Logic applied in WordActivation.activate
-                }
-            }
-        },
-        {
-            id: 'nihilistic_void',
-            name: 'Nihilistic Void',
-            description: 'Random spheres periodically disappear from existence, but each disappearance releases energy (2x potential) to nearby concepts.',
-            cost: 160,
-            maxLevel: 1,
-            applyEffect: (engine, level) => {
-                if (level === 1) {
-                    console.log("Applying Nihilistic Void");
-                    engine.gameState.nihilisticVoidActive = true;
-                    // Start the disappearance timer
-                    engine.startNihilisticVoidTimer();
-                    // Logic in Engine.triggerNihilisticVoid
-                }
-            }
-        },
-        {
-            id: 'holist_vision',
-            name: 'Holist Vision',
-            description: 'Micro spheres automatically merge into Meso spheres. Individual Micro activation impossible. Fusion costs no energy.',
-            cost: 140,
-            maxLevel: 1,
-            applyEffect: (engine, level) => {
-                if (level === 1) {
-                    console.log("Applying Holist Vision");
-                    engine.gameState.holistVisionActive = true;
-                    // Logic applied in Engine.updateGame and FusionSystem.attemptFusion
-                }
-            }
-        },
-        {
-            id: 'reductionist_toolkit',
-            name: 'Reductionist Toolkit',
-            description: 'Macro spheres cannot be activated directly. Double-click any sphere to break it into 3 smaller components.',
-            cost: 140,
-            maxLevel: 1,
-            applyEffect: (engine, level) => {
-                if (level === 1) {
-                    console.log("Applying Reductionist Toolkit");
-                    engine.gameState.reductionistToolkitActive = true;
-                    // Logic applied in WordActivation.activate and WordInteractionHandler
-                    engine.gameState.words.forEach(word => {
-                        // Check if the function exists before calling
-                        if (typeof word.addDoubleClickListener === 'function') {
-                            word.addDoubleClickListener(); // Add listener needed
-                        } else {
-                            console.warn(`Word ${word.id} does not have method addDoubleClickListener.`);
-                        }
-                    });
-                }
-            }
-        },
-    ];
-
-    // Apply an upgrade by ID
     applyUpgrade(itemId) {
-        const item = UpgradeSystem.UPGRADE_DEFINITIONS.find(i => i.id === itemId);
-        if (!item) {
-            console.warn(`Upgrade definition not found for ID: ${itemId}`);
-            return;
-        }
-
+        const item = this.definitions.find(i => i.id === itemId);
+        if (!item) return;
         const currentLevel = this.currentLevels[itemId] || 0;
-        if (currentLevel >= item.maxLevel) {
-            console.warn(`Upgrade ${itemId} is already at max level.`);
-            return;
-        }
-
+        if (currentLevel >= item.maxLevel) return;
         const newLevel = currentLevel + 1;
-        this.currentLevels[itemId] = newLevel; // Update central level tracking
-
+        this.currentLevels[itemId] = newLevel;
         if (typeof item.applyEffect === 'function') {
             item.applyEffect(this.engine, newLevel);
-            console.log(`Successfully applied upgrade '${item.name}' to Level ${newLevel}`);
-        } else {
-            console.warn(`Could not apply effect for upgrade ID: ${item.id}. Effect function missing.`);
         }
     }
 
-
-    // Initialize base values before applying upgrades
     initializeWordBaseStats() {
         this.engine.gameState.words.forEach(word => {
-             // Store base potential if not already stored
-             if (word.baseEnergyPotential === undefined) {
-                 word.baseEnergyPotential = word.energyPotential;
-             }
-             // Store base restitution if needed by upgrades
-             if (word.physics && word.physics.baseRestitution === undefined) { // Check physics component
-                 word.physics.baseRestitution = word.restitution;
-             }
-         });
-         // Store base resonance multipliers if needed
-         if (this.engine.resonanceSystem) {
-             for (const type in this.engine.resonanceSystem.chainTypes) {
-                 const chainType = this.engine.resonanceSystem.chainTypes[type];
-                 if (chainType.baseMultiplier === undefined) {
+            if (word.baseEnergyPotential === undefined) {
+                word.baseEnergyPotential = word.energyPotential;
+            }
+            if (word.physics && word.physics.baseRestitution === undefined) {
+                word.physics.baseRestitution = word.restitution;
+            }
+        });
+        if (this.engine.resonanceSystem) {
+            for (const type in this.engine.resonanceSystem.chainTypes) {
+                const chainType = this.engine.resonanceSystem.chainTypes[type];
+                if (chainType.baseMultiplier === undefined) {
                     chainType.baseMultiplier = chainType.multiplier;
-                 }
-             }
-             if(this.engine.resonanceSystem.baseChainDecayTime === undefined) {
-                 this.engine.resonanceSystem.baseChainDecayTime = this.engine.resonanceSystem.chainDecayTime;
-             }
-         }
+                }
+            }
+            if (this.engine.resonanceSystem.baseChainDecayTime === undefined) {
+                this.engine.resonanceSystem.baseChainDecayTime = this.engine.resonanceSystem.chainDecayTime;
+            }
+        }
     }
 
-     // Reset upgrades (e.g., for a new game run in roguelike mode)
-     resetUpgrades() {
-         console.log("Resetting all upgrades...");
-         // Reset tracked levels
-         Object.keys(this.currentLevels).forEach(id => {
-             this.currentLevels[id] = 0;
-         });
+    resetUpgrades() {
+        Object.keys(this.currentLevels).forEach(id => {
+            this.currentLevels[id] = 0;
+        });
 
-         // Reset engine state flags modified by upgrades
-         this.engine.gameState.chromaticBlindnessColor = null;
-         this.engine.gameState.quantumUncertaintyActive = false;
-         this.engine.gameState.skepticalMethodActive = false;
-         this.engine.gameState.deterministicUniverseActive = false;
-         this.engine.gameState.eternalismActive = false;
-         this.engine.gameState.categoricalImperativeActive = false;
-         this.engine.gameState.nihilisticVoidActive = false;
-         this.engine.gameState.categoricalSequence = null;
-         this.engine.gameState.holistVisionActive = false;
-         this.engine.gameState.reductionistToolkitActive = false;
+        this.engine.gameState.chromaticBlindnessColor = null;
+        this.engine.gameState.quantumUncertaintyActive = false;
+        this.engine.gameState.skepticalMethodActive = false;
+        this.engine.gameState.deterministicUniverseActive = false;
+        this.engine.gameState.eternalismActive = false;
+        this.engine.gameState.categoricalImperativeActive = false;
+        this.engine.gameState.nihilisticVoidActive = false;
+        this.engine.gameState.categoricalSequence = null;
+        this.engine.gameState.holistVisionActive = false;
+        this.engine.gameState.reductionistToolkitActive = false;
+        this.engine.stopNihilisticVoidTimer();
 
-         // Stop timers related to upgrades
-         this.engine.stopNihilisticVoidTimer();
+        this.engine.gameState.words.forEach(word => {
+            if (word && typeof word.removeDoubleClickListener === 'function') {
+                word.removeDoubleClickListener();
+            }
+        });
 
-         // Remove listeners added by upgrades
-          this.engine.gameState.words.forEach(word => {
-              // Check if the function exists before calling
-              if (word && typeof word.removeDoubleClickListener === 'function') {
-                 word.removeDoubleClickListener();
-             }
-          });
+        this.engine.physics.collisionEnergyMultiplier = 1.0;
+        this.engine.fusionSuccessRateModifier = 1.0;
 
-
-         // Reset multipliers or effects applied by upgrades
-         this.engine.physics.collisionEnergyMultiplier = 1.0;
-         this.engine.fusionSuccessRateModifier = 1.0;
-
-         // Reset resonance system values to base
-         if (this.engine.resonanceSystem) {
-             for (const type in this.engine.resonanceSystem.chainTypes) {
-                 const chainType = this.engine.resonanceSystem.chainTypes[type];
-                 if (chainType.baseMultiplier !== undefined) {
+        if (this.engine.resonanceSystem) {
+            for (const type in this.engine.resonanceSystem.chainTypes) {
+                const chainType = this.engine.resonanceSystem.chainTypes[type];
+                if (chainType.baseMultiplier !== undefined) {
                     chainType.multiplier = chainType.baseMultiplier;
-                 }
-             }
-             if(this.engine.resonanceSystem.baseChainDecayTime !== undefined) {
+                }
+            }
+            if (this.engine.resonanceSystem.baseChainDecayTime !== undefined) {
                 this.engine.resonanceSystem.chainDecayTime = this.engine.resonanceSystem.baseChainDecayTime;
-             }
-         }
+            }
+        }
 
-         // Reset word stats to base values
-         this.engine.gameState.words.forEach(word => {
-             if (word.baseEnergyPotential !== undefined) {
-                 word.energyPotential = word.baseEnergyPotential;
-             }
-             if (word.physics?.baseRestitution !== undefined) { // Check physics component
+        this.engine.gameState.words.forEach(word => {
+            if (word.baseEnergyPotential !== undefined) {
+                word.energyPotential = word.baseEnergyPotential;
+            }
+            if (word.physics?.baseRestitution !== undefined) {
                 word.restitution = word.physics.baseRestitution;
-             }
-             word.updateVisibility(); // Ensure visibility is reset
-         });
-         console.log("Upgrades reset to base values.");
-     }
+            }
+            word.updateVisibility();
+        });
+    }
 }
