@@ -238,11 +238,93 @@ export class Word {
                     this.vx = (this.vx / speed) * maxThrowSpeed;
                     this.vy = (this.vy / speed) * maxThrowSpeed;
                 }
+                
+                // Check for fusion with other words
+                this.checkForFusion();
             }
         }
         this.dragMoved = false;
     }
 
+    checkForFusion() {
+        if (!this.engine) return;
+        
+        const words = this.engine.gameState.words;
+        const centerX = this.x + this.radius;
+        const centerY = this.y + this.radius;
+        
+        for (const otherWord of words) {
+            if (otherWord === this) continue;
+            
+            const otherCenterX = otherWord.x + otherWord.radius;
+            const otherCenterY = otherWord.y + otherWord.radius;
+            
+            const dx = centerX - otherCenterX;
+            const dy = centerY - otherCenterY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            // If words are very close, attempt fusion
+            if (distance < this.radius + otherWord.radius + 10) {
+                this.attemptFusion(otherWord);
+                break;
+            }
+        }
+    }
+    
+    attemptFusion(otherWord) {
+        // Calculate fusion affinity based on word properties
+        const affinityScore = Math.random(); // Simplified - could be based on word properties
+        const energyCost = 5; // Energy required for fusion attempt
+        
+        if (affinityScore > 0.3 && this.engine.currentEnergy >= energyCost) {
+            this.engine.addEnergy(-energyCost); // Subtract energy cost
+            
+            // Visual effect at fusion point
+            const fusionX = (this.x + this.radius + otherWord.x + otherWord.radius) / 2;
+            const fusionY = (this.y + this.radius + otherWord.y + otherWord.radius) / 2;
+            
+            // Create fusion effect
+            const fusionColor = this.blendColors(this.colors.primary, otherWord.colors.primary);
+            createSpecialEffect('fusion', fusionX, fusionY, fusionColor, 30);
+            
+            // Show fusion message
+            this.showFusionMessage(this.text, otherWord.text, fusionX, fusionY);
+        }
+    }
+    
+    showFusionMessage(word1, word2, x, y) {
+        const message = document.createElement('div');
+        message.innerText = `${word1} + ${word2}`;
+        message.style.position = 'absolute';
+        message.style.left = `${x}px`;
+        message.style.top = `${y}px`;
+        message.style.transform = 'translate(-50%, -50%)';
+        message.style.color = '#ffffff';
+        message.style.fontWeight = 'bold';
+        message.style.textShadow = '0 0 5px rgba(0,0,0,0.8)';
+        message.style.pointerEvents = 'none';
+        message.style.zIndex = '200';
+        this.container.appendChild(message);
+        
+        // Animate and remove
+        message.animate([
+            { opacity: 1, transform: 'translate(-50%, -50%)' },
+            { opacity: 0, transform: 'translate(-50%, -120%)' }
+        ], {
+            duration: 1500,
+            easing: 'ease-out'
+        }).onfinish = () => {
+            if (this.container.contains(message)) {
+                this.container.removeChild(message);
+            }
+        };
+    }
+    
+    blendColors(color1, color2) {
+        // Simple color blending
+        return color1;
+    }
+    
     applyImpulse(impulseX, impulseY) {
         if (this.mass > 0.01) {
             this.vx += impulseX / this.mass;

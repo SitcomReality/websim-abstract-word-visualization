@@ -8,7 +8,9 @@ import { createRain } from 'effects/rain.js';
 import { createHyperEffect } from 'effects/hyper.js';
 import { EFFECT_SETTINGS } from 'config/constants.js';
 
-export function createSpecialEffect(id, x, y, color) {
+export function createSpecialEffect(id, x, y, color, count) {
+    let particleCount = count || 10;
+    
     switch(id) {
         case 'smorma':
             createExplosion(x, y, color, EFFECT_SETTINGS.EXPLOSION.particleCount);
@@ -34,8 +36,13 @@ export function createSpecialEffect(id, x, y, color) {
         case 'hyperbolic':
             createHyperEffect(x, y, color, EFFECT_SETTINGS.HYPER.particleCount);
             break;
+        case 'fusion':
+            // Special fusion effect combines multiple effects
+            createExplosion(x, y, color, particleCount / 2);
+            createWave(x, y, color, 3);
+            createPulse(x, y, color, 3);
+            break;
         default:
             createExplosion(x, y, '#ffffff', 10);
     }
 }
-
