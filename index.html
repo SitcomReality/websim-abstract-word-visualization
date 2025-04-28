@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Abstract Word Visualization</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/words.css">
+    <link rel="stylesheet" href="css/effects.css">
+    <link rel="stylesheet" href="css/screens.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "config/": "./js/config/",
+            "core/": "./js/core/",
+            "components/": "./js/components/",
+            "effects/": "./js/effects/",
+            "screens/": "./js/screens/",
+            "utils/": "./js/utils/"
+        }
+    }
+    </script>
+    <script type="module" src="js/main.js"></script>
     <style>
         body {
             margin: 0;
@@ -39,58 +56,12 @@
             pointer-events: none;
         }
         
-        #smorma {
-            background: radial-gradient(circle, #ff5722, #e91e63);
-            width: 120px;
-            height: 120px;
+        .screen {
+            display: none;
         }
         
-        #pips {
-            background: radial-gradient(circle, #9c27b0, #673ab7);
-            width: 80px;
-            height: 80px;
-        }
-        
-        #tine {
-            background: radial-gradient(circle, #2196f3, #03a9f4);
-            width: 90px;
-            height: 90px;
-        }
-        
-        #elusive {
-            background: radial-gradient(circle, #009688, #4caf50);
-            width: 130px;
-            height: 130px;
-        }
-        
-        #paradiastolic {
-            background: radial-gradient(circle, #ffc107, #ff9800);
-            width: 150px;
-            height: 150px;
-        }
-        
-        #perihelion {
-            background: radial-gradient(circle, #f44336, #b71c1c);
-            width: 110px;
-            height: 110px;
-        }
-        
-        #scolflocs {
-            background: radial-gradient(circle, #3f51b5, #1a237e);
-            width: 140px;
-            height: 140px;
-        }
-        
-        #hyperbolic {
-            background: radial-gradient(circle, #607d8b, #263238);
-            width: 125px;
-            height: 125px;
-        }
-        
-        .word.active {
-            z-index: 10;
-            transform: scale(1.5);
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+        .screen.active {
+            display: block;
         }
         
         .trail {
@@ -109,21 +80,40 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div id="smorma" class="word"><span>Smorma pips</span></div>
-        <div id="pips" class="word"><span>Pips</span></div>
-        <div id="tine" class="word"><span>Tine</span></div>
-        <div id="elusive" class="word"><span>Elusive allusion</span></div>
-        <div id="paradiastolic" class="word"><span>Paradiastolic clotting</span></div>
-        <div id="perihelion" class="word"><span>Perihelion torsion</span></div>
-        <div id="scolflocs" class="word"><span>Scolflocs periporter</span></div>
-        <div id="hyperbolic" class="word"><span>Hyperbolic lenity</span></div>
+    <div id="app">
+        <div id="splash-screen" class="screen active">
+            <div class="splash-content">
+                <h1>Abstract Word Visualization</h1>
+                <button id="start-button">Enter Experience</button>
+            </div>
+        </div>
+        
+        <div id="game-screen" class="screen">
+            <div class="container">
+                <div id="smorma" class="word"><span>Smorma pips</span></div>
+                <div id="pips" class="word"><span>Pips</span></div>
+                <div id="tine" class="word"><span>Tine</span></div>
+                <div id="elusive" class="word"><span>Elusive allusion</span></div>
+                <div id="paradiastolic" class="word"><span>Paradiastolic clotting</span></div>
+                <div id="perihelion" class="word"><span>Perihelion torsion</span></div>
+                <div id="scolflocs" class="word"><span>Scolflocs periporter</span></div>
+                <div id="hyperbolic" class="word"><span>Hyperbolic lenity</span></div>
+            </div>
+        </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const words = document.querySelectorAll('.word');
             const container = document.querySelector('.container');
+            const startButton = document.getElementById('start-button');
+            const splashScreen = document.getElementById('splash-screen');
+            const gameScreen = document.getElementById('game-screen');
+            
+            startButton.addEventListener('click', () => {
+                splashScreen.classList.remove('active');
+                gameScreen.classList.add('active');
+            });
             
             // Initialize positions
             words.forEach(word => {
@@ -363,7 +353,6 @@
                 }
             }
             
-            // Other effect functions would be implemented similarly
             function createFadeEffect(x, y, color, count) {
                 for (let i = 0; i < count; i++) {
                     setTimeout(() => {
@@ -521,4 +510,3 @@
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
-
