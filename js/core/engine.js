@@ -1,4 +1,5 @@
 import { initSplashScreen } from 'screens/splash.js';
+import { initGameScreen } from 'screens/game.js';
 import { PHYSICS_CONFIG } from 'config/constants.js';
 import { ScreenManager } from 'core/screenManager.js';
 import { Physics } from 'core/physics.js';
@@ -17,22 +18,18 @@ export class Engine {
             currentScreen: 'splash',
             words: [],
             active: false,
-            tutorialStep: 0,
-            discoveredConcepts: [],
-            deterministicUniverseActive: false,
-            quantumUncertaintyActive: false,
-            skepticalMethodActive: false,
-            chromaticBlindnessColor: null,
-            holistVisionActive: false,
-            reductionistToolkitActive: false,
-            pragmaticFrameworkActive: false,
+            tutorialStep: 0, // Track tutorial progress
+            discoveredConcepts: [] // Track discovered philosophical concepts
         };
         this.lastTimestamp = 0;
         this.container = null;
+        // Add properties for global modifiers if needed by upgrades
         this.fusionSuccessRateModifier = 1.0;
 
+        // Initialize Managers and Systems
         this.screenManager = new ScreenManager(this);
-        this.physics = new Physics(this);
+        this.physics = new Physics(this); // Pass engine instance
+        // Initialize physics-related upgradeable properties
         this.physics.collisionEnergyMultiplier = 1.0;
         this.energyManager = new EnergyManager(this, 0, null);
         this.shopSystem = new ShopSystem(this);
@@ -43,18 +40,26 @@ export class Engine {
         this.resonanceSystem = new ResonanceSystem(this);
         this.comboSystem = new ComboSystem(this);
 
+        // Collision sound related properties - moved potentially to an AudioManager later
         this.collisionSounds = {
             light: new Audio(),
             medium: new Audio(),
             heavy: new Audio()
         };
         this.lastCollisionTime = 0;
+        this.collisionCooldown = PHYSICS_CONFIG.COLLISION_COOLDOWN; // Maybe move to Physics?
+
+        // Tutorial system
         this.tutorialHintElement = null;
     }
 
     init() {
+        // Initialize Splash Screen, passing the ScreenManager's method
         initSplashScreen(this.screenManager.showGameScreen.bind(this.screenManager));
+        // Initialize Shop System (fetches elements, sets up listeners)
         this.shopSystem.initShop();
+
+        // Create tutorial hint element
         this.createTutorialHintElement();
     }
 
@@ -95,22 +100,20 @@ export class Engine {
     }
 
     startGameLoop() {
-        if (this.gameState.active) {
-            console.warn("Game loop already started.");
-            return;
+        if (this.gameState.active) { // Prevent multiple loops if already active
+             console.warn("Game loop already started.");
+             return;
         }
+        // Initialize base word stats before starting loop / applying upgrades
         if (this.upgradeSystem) {
-            if (this.gameState.words.length > 0) {
-                this.upgradeSystem.initializeWordBaseStats();
-            } else {
-                console.warn("Attempted to initialize word stats before words were created.");
-            }
+            this.upgradeSystem.initializeWordBaseStats();
         }
 
         this.gameState.active = true;
         this.lastTimestamp = performance.now();
         console.log("Starting game loop");
 
+        // Initial tutorial hint
         if (this.gameState.tutorialStep === 0) {
             setTimeout(() => {
                 this.showTutorialHint("Welcome! Click on the philosophical spheres to harvest energy.");
@@ -119,23 +122,28 @@ export class Engine {
 
         const loop = (timestamp) => {
             if (!this.gameState.active) {
-                console.log("Stopping game loop");
-                return;
+                 console.log("Stopping game loop");
+                 return; // Exit loop if game state is inactive
             }
 
-            const dt = Math.min((timestamp - this.lastTimestamp) / 1000, 0.1);
+            // Calculate delta time, ensuring it's not excessively large
+            const dt = Math.min((timestamp - this.lastTimestamp) / 1000, 0.1); // Max dt 100ms
             this.lastTimestamp = timestamp;
 
+            // Update game logic only if on the game screen and container exists
             if (this.gameState.currentScreen === 'game' && this.container) {
                 this.updateGame(dt);
             }
 
+            // Request the next frame
             requestAnimationFrame(loop);
         };
 
+        // Start the loop
         requestAnimationFrame(loop);
     }
 
+    // Delegate energy addition to the EnergyManager
     addEnergy(amount) {
         if (this.energyManager) {
             this.energyManager.addEnergy(amount);
@@ -144,6 +152,7 @@ export class Engine {
         }
     }
 
+    // Getter for current energy
     get currentEnergy() {
         return this.energyManager ? this.energyManager.getEnergy() : 0;
     }
@@ -151,21 +160,24 @@ export class Engine {
     updateGame(dt) {
         if (!this.container || !this.gameState.active || !this.gameState.words) return;
 
+        // Update word physics (movement, boundaries) via Physics module
+        // Filter out words being destroyed before passing to physics
         const activeWords = this.gameState.words.filter(word => !word.isBeingDestroyed);
 
-        activeWords.forEach(word => word.update(dt));
+        this.physics.updatePhysics(activeWords, dt * 60, this.container); // Pass dt scaled for 60fps base
 
+        // Handle collisions via Physics module
         this.physics.handleCollisions(activeWords, this.container);
 
+        // Update resonance system if it exists
         if (this.resonanceSystem) {
-            this.resonanceSystem.updateResonanceDisplay();
-            this.resonanceSystem.updateConnectionVisuals(dt);
+            this.resonanceSystem.updateResonanceDisplay(); // Updates the UI panel
+            this.resonanceSystem.updateConnectionVisuals(dt); // Updates the connection lines
         }
 
-        if (Math.random() < 0.05) {
-            if (this.achievementSystem) {
-                this.achievementSystem.checkAchievements();
-            }
+        // Check achievements periodically
+        if (Math.random() < 0.05) { // Check about once every 20 frames
+            this.achievementSystem.checkAchievements();
         }
     }
 
@@ -174,13 +186,16 @@ export class Engine {
         this.gameState.active = false;
     }
 
+    // Record discovered philosophical concepts
     recordDiscovery(conceptId) {
         if (!this.gameState.discoveredConcepts.includes(conceptId)) {
             this.gameState.discoveredConcepts.push(conceptId);
             console.log(`New philosophical concept discovered: ${conceptId}`);
 
+            // Show discovery notification
             this.showDiscoveryNotification(conceptId);
 
+            // Check for milestone achievements
             if (this.gameState.discoveredConcepts.length === 5) {
                 // Could add achievement: "Philosophical Mind" - Discover 5 concepts
             }
@@ -218,6 +233,7 @@ export class Engine {
         notification.style.minWidth = '300px';
         container.appendChild(notification);
 
+        // Animate entry
         notification.animate([
             { opacity: 0, transform: 'translate(-50%, -50%) scale(0.8)' },
             { opacity: 1, transform: 'translate(-50%, -50%) scale(1.05)' },
@@ -226,9 +242,9 @@ export class Engine {
             duration: 1000,
             easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)'
         }).onfinish = () => {
-            notification.style.opacity = '1';
-            notification.style.transform = 'translate(-50%, -50%) scale(1)';
-        };
+             notification.style.opacity = '1'; // Ensure opacity is set after animation
+             notification.style.transform = 'translate(-50%, -50%) scale(1)';
+         };
 
         setTimeout(() => {
             notification.animate([

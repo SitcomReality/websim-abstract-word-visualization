@@ -1,143 +1,115 @@
-import { getRandomPosition } from 'utils/position.js';
-import { createTrail } from 'components/Trail.js';
-import { PHYSICS_CONFIG, WORDS_DATA } from 'config/constants.js';
-import { WordInteractionHandler } from 'components/WordInteractionHandler.js';
-import { WordRenderer } from 'components/WordRenderer.js';
-import { WordPhysics } from 'components/WordPhysics.js';
-import { WordActivation } from 'components/WordActivation.js';
-import { WordEffects } from 'components/WordEffects.js';
+import { WordCore } from './word/WordCore.js';
+import { WordBehavior } from './word/WordBehavior.js';
+import { WordInteractionHandler } from './WordInteractionHandler.js';
 
 export class Word {
     constructor(data, container, engine) {
-        this.id = data.id;
-        this.text = data.text;
-        this.size = data.size;
-        this.radius = this.size / 2;
-        this.colors = data.colors;
-        this.container = container;
-        this.engine = engine;
-
-        const wordDefinition = WORDS_DATA.find(wd => wd.id === this.id) || data;
-        this.baseEnergyPotential = wordDefinition.energyPotential || 0;
-        this.energyPotential = this.baseEnergyPotential;
-        this.description = wordDefinition?.description || this.text;
-
-        this.ontologicalCategory = wordDefinition.ontologicalCategory || 'Meso';
-        this.epistemologicalSchool = wordDefinition.epistemologicalSchool || 'Rationalism';
-        this.methodologicalApproach = wordDefinition.methodologicalApproach || 'Analytical';
-
-        this.x = 0;
-        this.y = 0;
-
-        this.isDragging = false;
-        this.isBeingDestroyed = false;
-        this.activationCount = 0;
-        this.isVisible = true;
-
-        this.renderer = new WordRenderer(this, this.container, this.engine);
-        this.physics = new WordPhysics(this, this.engine);
-        this.activation = new WordActivation(this, this.engine);
-        this.effects = new WordEffects(this, this.container, this.engine);
-        this.interactionHandler = new WordInteractionHandler(this, this.container, this.engine);
-
-        this.init();
-    }
-
-    init() {
-        this.element = this.renderer.initElement();
+        this.core = new WordCore(data, container, engine);
+        this.behavior = new WordBehavior(this.core, engine);
+        this.interactionHandler = new WordInteractionHandler(this, container, engine); // Pass the main Word instance
 
         this.addEventListeners();
 
-        this.updateVisibility();
+        // Initial visibility check based on engine state
+        this.behavior.updateVisibility(); // Moved call here after core/behavior init
     }
 
-    addEventListeners() {
-        if (!this.element) return;
+    // --- Public Accessors ---
+    // Provide access to core properties needed externally
+    get id() { return this.core.id; }
+    get text() { return this.core.text; }
+    get size() { return this.core.size; }
+    get radius() { return this.core.radius; }
+    get colors() { return this.core.colors; }
+    get x() { return this.core.x; }
+    set x(value) { this.core.x = value; }
+    get y() { return this.core.y; }
+    set y(value) { this.core.y = value; }
+    get vx() { return this.behavior.vx; }
+    set vx(value) { this.behavior.vx = value; }
+    get vy() { return this.behavior.vy; }
+    set vy(value) { this.behavior.vy = value; }
+    get mass() { return this.behavior.mass; }
+    get restitution() { return this.behavior.restitution; }
+    set restitution(value) { this.behavior.restitution = value; }
+    get element() { return this.core.element; }
+    get isDragging() { return this.core.isDragging; }
+    set isDragging(value) { this.core.isDragging = value; } // Needed by InteractionHandler
+    get isBeingDestroyed() { return this.core.isBeingDestroyed; }
+    get isVisible() { return this.core.isVisible; }
+    get energyPotential() { return this.core.energyPotential; }
+    set energyPotential(value) { this.core.energyPotential = value; }
+    get baseEnergyPotential() { return this.core.baseEnergyPotential; }
+    set baseEnergyPotential(value) { this.core.baseEnergyPotential = value; } // Needed for upgrades
+    get epistemologicalSchool() { return this.core.epistemologicalSchool; }
+    get engine() { return this.core.engine; } // Needed by InteractionHandler & Behavior
+    get container() { return this.core.container; } // Needed by InteractionHandler
+    get maxSpeed() { return this.behavior.maxSpeed; } // Needed by InteractionHandler
 
+
+    // --- Core Methods ---
+
+    addEventListeners() {
+        if (!this.core.element) return;
+
+        // Prevent interaction if not visible or being destroyed
         const handleInteraction = (handlerFn, event) => {
-            if (!this.isVisible || this.isBeingDestroyed) return;
+            if (!this.core.isVisible || this.core.isBeingDestroyed) return;
             handlerFn.call(this.interactionHandler, event);
         };
 
         const handleActivation = (event) => {
-            if (!this.isVisible || this.isBeingDestroyed) return;
-            if (event.target === this.element || event.target.parentNode === this.element) {
-                if (!this.interactionHandler.dragMoved) {
-                    this.activate();
-                }
+            if (!this.core.isVisible || this.core.isBeingDestroyed) return;
+            // Check dragMoved on the interactionHandler instance
+            if (!this.interactionHandler.dragMoved) {
+                this.activate(); // Call the main Word activate method
             }
         }
 
-        this.element.addEventListener('click', handleActivation);
+        this.core.element.addEventListener('click', handleActivation);
+        this.core.element.addEventListener('mousedown', (e) => handleInteraction(this.interactionHandler.startDrag, e));
 
-        this.element.addEventListener('mousedown', (e) => {
-            if (e.target === this.element || e.target.parentNode === this.element) {
-                handleInteraction(this.interactionHandler.startDrag, e);
-            }
-        });
+        this.core.element.addEventListener('touchstart', (e) => {
+             if (e.target === this.core.element || e.target.parentNode === this.core.element) {
+                 handleInteraction(this.interactionHandler.startDrag, e.touches[0]);
+             }
+         }, { passive: false });
 
-        this.element.addEventListener('touchstart', (e) => {
-            if (e.target === this.element || e.target.parentNode === this.element) {
-                e.preventDefault();
-                handleInteraction(this.interactionHandler.startDrag, e.touches[0]);
-            }
-        }, { passive: false });
+        // Window listeners remain managed by WordInteractionHandler
     }
+
+    // --- Delegated Methods ---
 
     update(dt = 1) {
-        if (this.isDragging || !this.isVisible || this.isBeingDestroyed) return;
-
-        this.physics.update(dt);
-        this.renderer.updatePosition();
-        this.updateResonanceVisuals();
-    }
-
-    updateVisibility() {
-        if (!this.engine || !this.element) return;
-
-        const blindColor = this.engine.gameState.chromaticBlindnessColor;
-        const shouldBeVisible = !(blindColor && this.epistemologicalSchool.toLowerCase() === blindColor.toLowerCase());
-
-        if (this.isVisible !== shouldBeVisible) {
-            this.isVisible = shouldBeVisible;
-            this.renderer.updateVisuals();
-
-            if (!this.isVisible && this.isDragging) {
-                this.interactionHandler.endDrag(null, true);
-            }
-        }
-    }
-
-    updateResonanceVisuals() {
-        this.renderer.updateVisuals();
+        this.behavior.updatePhysics(dt);
     }
 
     activate() {
-        this.activation.activate();
-    }
-
-    showCooldownFeedback() {
-        this.effects.showCooldownFeedback();
-    }
-
-    applyImpulse(impulseX, impulseY) {
-        this.physics.applyImpulse(impulseX, impulseY);
+        this.behavior.activate();
     }
 
     destroy(skipAnimation = false) {
-        if (this.isBeingDestroyed) return;
-
-        this.isBeingDestroyed = true;
-        this.isVisible = false;
-
-        if (this.engine && this.engine.gameState && this.engine.gameState.words) {
-            const index = this.engine.gameState.words.indexOf(this);
-            if (index > -1) {
-                this.engine.gameState.words.splice(index, 1);
-            }
-        }
-
-        this.renderer.destroyElement(skipAnimation);
-        this.element = null;
+        this.behavior.destroy(skipAnimation);
     }
+
+    applyImpulse(impulseX, impulseY) {
+        this.behavior.applyImpulse(impulseX, impulseY);
+    }
+
+    updateElementPosition() {
+        this.core.updateElementPosition();
+    }
+
+    updateResonanceVisuals() {
+        this.behavior.updateResonanceVisuals();
+    }
+
+    // Method to update visibility based on engine state (e.g., Chromatic Blindness)
+    updateVisibility() {
+         this.behavior.updateVisibility();
+         // If becoming invisible while dragging, cancel drag via interaction handler
+         if (!this.core.isVisible && this.core.isDragging) {
+             this.interactionHandler.endDrag(null, true); // Cancel drag
+         }
+     }
 }
