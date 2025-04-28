@@ -9,6 +9,7 @@ import { WordManager } from 'systems/wordManager.js';
 import { UpgradeSystem } from 'systems/upgrades.js';
 import { FusionSystem } from 'systems/fusion.js';
 import { AchievementSystem } from 'systems/achievements.js';
+import { ResonanceSystem } from 'systems/resonance.js';
 
 export class Engine {
     constructor() {
@@ -33,6 +34,7 @@ export class Engine {
         this.upgradeSystem = new UpgradeSystem(this);
         this.fusionSystem = new FusionSystem(this);
         this.achievementSystem = new AchievementSystem(this);
+        this.resonanceSystem = new ResonanceSystem(this);
 
         // Collision sound related properties - moved potentially to an AudioManager later
         this.collisionSounds = {
@@ -113,6 +115,11 @@ export class Engine {
 
         // Handle collisions via Physics module
         this.physics.handleCollisions(activeWords, this.container);
+        
+        // Update resonance system if it exists
+        if (this.resonanceSystem) {
+            this.resonanceSystem.updateResonanceDisplay();
+        }
         
         // Check achievements periodically
         if (Math.random() < 0.05) { // Check about once every 20 frames

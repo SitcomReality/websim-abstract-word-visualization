@@ -41,7 +41,14 @@ export class Word {
         this.element = document.createElement('div');
         this.element.id = this.id;
         this.element.className = 'word';
+        
+        // Add description element
+        const description = document.createElement('div');
+        description.className = 'word-description';
+        description.textContent = WORDS_DATA.find(w => w.id === this.id)?.description || this.text;
+        
         this.element.innerHTML = `<span>${this.text}</span>`;
+        this.element.appendChild(description);
 
         this.element.style.width = `${this.size}px`;
         this.element.style.height = `${this.size}px`;
@@ -167,8 +174,20 @@ export class Word {
         const centerY = this.y + this.radius;
         createSpecialEffect(this.id, centerX, centerY, this.colors.primary);
 
+        // Apply resonance multiplier if system exists
+        let energyMultiplier = 1;
+        if (this.engine.resonanceSystem) {
+            energyMultiplier = this.engine.resonanceSystem.wordActivated(this);
+        }
+
         if (this.engine && typeof this.engine.addEnergy === 'function') {
-            this.engine.addEnergy(this.energyPotential);
+            const energyGained = this.energyPotential * energyMultiplier;
+            this.engine.addEnergy(energyGained);
+            
+            // Show the multiplier if > 1
+            if (energyMultiplier > 1) {
+                this.showMultiplierEffect(energyMultiplier);
+            }
             
             // Track word activations for achievements
             if (this.engine.achievementSystem) {
@@ -183,6 +202,37 @@ export class Word {
                 this.element.classList.remove('active');
             }
         }, 1500);
+    }
+
+    showMultiplierEffect(multiplier) {
+        const multiplierEl = document.createElement('div');
+        multiplierEl.className = 'word-multiplier';
+        multiplierEl.textContent = `×${multiplier.toFixed(1)}`;
+        
+        multiplierEl.style.position = 'absolute';
+        multiplierEl.style.left = `${this.x + this.size/2}px`;
+        multiplierEl.style.top = `${this.y - 20}px`;
+        multiplierEl.style.color = '#4caf50';
+        multiplierEl.style.fontWeight = 'bold';
+        multiplierEl.style.fontSize = '1.2em';
+        multiplierEl.style.textShadow = '0 0 5px rgba(0,0,0,0.8)';
+        multiplierEl.style.pointerEvents = 'none';
+        multiplierEl.style.zIndex = '200';
+        multiplierEl.style.transform = 'translate(-50%, -50%)';
+        
+        this.container.appendChild(multiplierEl);
+        
+        multiplierEl.animate([
+            { opacity: 1, transform: 'translate(-50%, -50%)' },
+            { opacity: 0, transform: 'translate(-50%, -100%)' }
+        ], {
+            duration: 1200,
+            easing: 'ease-out'
+        }).onfinish = () => {
+            if (this.container.contains(multiplierEl)) {
+                this.container.removeChild(multiplierEl);
+            }
+        };
     }
 
     applyImpulse(impulseX, impulseY) {

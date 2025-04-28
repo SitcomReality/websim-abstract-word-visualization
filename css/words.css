@@ -36,3 +36,36 @@
     cursor: grabbing;
     box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
 }
+
+.word .word-description {
+    position: absolute;
+    top: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    white-space: nowrap;
+    font-size: 0.9em;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 300;
+}
+
+.word:hover .word-description {
+    opacity: 1;
+}
+
+.word-multiplier {
+    position: absolute;
+    pointer-events: none;
+    z-index: 200;
+}
+
+.collision-energy {
+    position: absolute;
+    pointer-events: none;
+    z-index: 100;
+}

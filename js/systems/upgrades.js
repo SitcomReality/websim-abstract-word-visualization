@@ -49,7 +49,7 @@ export class UpgradeSystem {
                 engine.fusionSuccessRateModifier = 1 + level * 0.15; // Example property
             }
         },
-         {
+        {
             id: 'physics_restitution',
             name: 'Elasticity Enhancement',
             description: 'Makes words bouncier.',
@@ -63,13 +63,43 @@ export class UpgradeSystem {
                 const increase = (maxRestitution - baseRestitution) * (level * 0.2); // Increase range slightly
 
                 engine.gameState.words.forEach(word => {
-                   // Recalculate restitution based on new potential range
-                   // This is a simple example; could be more complex
-                   const randomFactor = Math.random() * (maxRestitution - baseRestitution + increase);
-                   word.restitution = Math.min(0.99, baseRestitution + increase + randomFactor);
+                    // Recalculate restitution based on new potential range
+                    // This is a simple example; could be more complex
+                    const randomFactor = Math.random() * (maxRestitution - baseRestitution + increase);
+                    word.restitution = Math.min(0.99, baseRestitution + increase + randomFactor);
                 });
             }
         },
+        {
+            id: 'resonance_duration',
+            name: 'Harmonic Resonator',
+            description: 'Extends the duration of resonance chains.',
+            cost: 75,
+            maxLevel: 3,
+            applyEffect: (engine, level) => {
+                if (engine.resonanceSystem) {
+                    // Increase chain duration by 2 seconds per level
+                    engine.resonanceSystem.chainDecayTime = 6000 + (level * 2000);
+                }
+            }
+        },
+        {
+            id: 'resonance_power',
+            name: 'Resonance Amplifier',
+            description: 'Increases the power of resonance chain multipliers.',
+            cost: 90,
+            maxLevel: 3,
+            applyEffect: (engine, level) => {
+                if (engine.resonanceSystem) {
+                    // Increase base multipliers for all chain types
+                    const increase = level * 0.2;
+                    for (const type in engine.resonanceSystem.chainTypes) {
+                        const chainType = engine.resonanceSystem.chainTypes[type];
+                        chainType.multiplier = chainType.multiplier + increase;
+                    }
+                }
+            }
+        }
     ];
 
     applyUpgradeEffect(item, newLevel) {
