@@ -1,4 +1,4 @@
-import { positionRandomly } from 'utils/position.js';
+import { getRandomPosition } from 'utils/position.js';
 import { createTrail } from 'components/Trail.js';
 import { createSpecialEffect } from 'effects/effectManager.js';
 
@@ -29,24 +29,28 @@ export class Word {
     }
     
     init() {
-        // Create DOM element
         this.element = document.createElement('div');
         this.element.id = this.id;
         this.element.className = 'word';
         this.element.innerHTML = `<span>${this.text}</span>`;
-        
-        // Set styles
+
         this.element.style.width = `${this.size}px`;
         this.element.style.height = `${this.size}px`;
         this.element.style.background = `radial-gradient(circle, ${this.colors.primary}, ${this.colors.secondary})`;
-        
-        // Position randomly
-        positionRandomly(this.element);
-        
-        // Add to container
+        this.element.style.position = 'absolute'; // Ensure position is absolute for transform to work correctly
+        this.element.style.left = '0px'; // Set initial left/top to 0 for transform positioning
+        this.element.style.top = '0px';
+
         this.container.appendChild(this.element);
-        
-        // Add event listeners
+
+        // Get random position and set initial physics coordinates
+        const initialPosition = getRandomPosition(this.element, this.container);
+        this.x = initialPosition.x;
+        this.y = initialPosition.y;
+
+        // Update element's visual position based on physics coordinates
+        this.updateElementPosition();
+
         this.addEventListeners();
         
         // Start floating animation
@@ -95,10 +99,14 @@ export class Word {
         this.y += this.vy;
         
         // Update element position
-        this.element.style.left = `${this.x}px`;
-        this.element.style.top = `${this.y}px`;
+        this.updateElementPosition();
     }
     
+    updateElementPosition() {
+        // Use translate for positioning, ensuring left/top are 0 in CSS or style init
+        this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
+    }
+
     activate() {
         // Remove active class from all words
         document.querySelectorAll('.word').forEach(word => word.classList.remove('active'));
@@ -130,8 +138,7 @@ export class Word {
 
         const x = e.clientX - this.offsetX;
         const y = e.clientY - this.offsetY;
-        this.element.style.left = `${x}px`;
-        this.element.style.top = `${y}px`;
+        this.element.style.transform = `translate(${x}px, ${y}px)`;
         
         // Update physics position
         this.x = x;
