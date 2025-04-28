@@ -18,8 +18,14 @@ export class Engine {
             currentScreen: 'splash',
             words: [],
             active: false,
-            tutorialStep: 0, // Track tutorial progress
-            discoveredConcepts: [] // Track discovered philosophical concepts
+            // GDD States / Flags
+            chromaticBlindnessColor: null, // Stores name of the blind school, e.g., 'Rationalism'
+            quantumUncertaintyActive: false,
+            skepticalMethodActive: false,
+            deterministicUniverseActive: false,
+            // --- End GDD States ---
+            tutorialStep: 0,
+            discoveredConcepts: []
         };
         this.lastTimestamp = 0;
         this.container = null;
@@ -28,13 +34,12 @@ export class Engine {
 
         // Initialize Managers and Systems
         this.screenManager = new ScreenManager(this);
-        this.physics = new Physics(this); // Pass engine instance
-        // Initialize physics-related upgradeable properties
+        this.physics = new Physics(this);
         this.physics.collisionEnergyMultiplier = 1.0;
         this.energyManager = new EnergyManager(this, 0, null);
+        this.upgradeSystem = new UpgradeSystem(this); // UpgradeSystem now holds levels
         this.shopSystem = new ShopSystem(this);
         this.wordManager = new WordManager(this);
-        this.upgradeSystem = new UpgradeSystem(this);
         this.fusionSystem = new FusionSystem(this);
         this.achievementSystem = new AchievementSystem(this);
         this.resonanceSystem = new ResonanceSystem(this);
@@ -104,10 +109,12 @@ export class Engine {
              console.warn("Game loop already started.");
              return;
         }
-        // Initialize base word stats before starting loop / applying upgrades
-        if (this.upgradeSystem) {
-            this.upgradeSystem.initializeWordBaseStats();
-        }
+        // Ensure base stats are initialized before first loop runs
+        // Should be called *after* words are created but *before* upgrades might be applied (though usually upgrades apply later)
+        // We call it here just in case words exist before loop start. WordManager.initializeWords might be a better place.
+        // if (this.upgradeSystem) {
+        //     this.upgradeSystem.initializeWordBaseStats();
+        // }
 
         this.gameState.active = true;
         this.lastTimestamp = performance.now();
@@ -162,7 +169,7 @@ export class Engine {
 
         // Update word physics (movement, boundaries) via Physics module
         // Filter out words being destroyed before passing to physics
-        const activeWords = this.gameState.words.filter(word => !word.isBeingDestroyed);
+        const activeWords = this.gameState.words.filter(word => !word.isBeingDestroyed && word.isVisible); // Only update visible words
 
         this.physics.updatePhysics(activeWords, dt * 60, this.container); // Pass dt scaled for 60fps base
 
