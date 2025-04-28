@@ -30,6 +30,7 @@ export class WordCore {
         this.isBeingDestroyed = false;
         this.isActive = false; // Activation state (e.g., during the pop animation)
         this.isVisible = true; // Visibility state
+        this.lastTapTime = 0; // For double-tap detection
 
         // --- DOM Element ---
         this.element = null;
@@ -40,6 +41,7 @@ export class WordCore {
         this.wordInstance = null; // Reference back to the main Word object
         this.physics = null; // Reference to the WordPhysics instance
         this.eventListeners = null; // To store listeners for removal
+        this.doubleClickListenerRef = null; // To store dblclick listener reference
     }
 
     createElement() {

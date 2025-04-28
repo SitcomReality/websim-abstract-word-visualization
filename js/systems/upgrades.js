@@ -258,7 +258,14 @@ export class UpgradeSystem {
                     console.log("Applying Reductionist Toolkit");
                     engine.gameState.reductionistToolkitActive = true;
                     // Logic applied in WordActivation.activate and WordInteractionHandler
-                    engine.gameState.words.forEach(word => word.addDoubleClickListener()); // Add listener needed
+                    engine.gameState.words.forEach(word => {
+                        // Check if the function exists before calling
+                        if (typeof word.addDoubleClickListener === 'function') {
+                            word.addDoubleClickListener(); // Add listener needed
+                        } else {
+                            console.warn(`Word ${word.id} does not have method addDoubleClickListener.`);
+                        }
+                    });
                 }
             }
         },
@@ -341,7 +348,8 @@ export class UpgradeSystem {
 
          // Remove listeners added by upgrades
           this.engine.gameState.words.forEach(word => {
-              if (word.removeDoubleClickListener) {
+              // Check if the function exists before calling
+              if (word && typeof word.removeDoubleClickListener === 'function') {
                  word.removeDoubleClickListener();
              }
           });

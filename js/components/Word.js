@@ -4,6 +4,7 @@ import { WordPhysics } from './word/WordPhysics.js';
 import { WordActivation } from './word/WordActivation.js';
 import { WordFeedback } from './word/WordFeedback.js';
 import { WordLifecycle } from './word/WordLifecycle.js';
+import { WORDS_DATA } from 'config/constants.js'; // Needed for Reductionist Toolkit fragment creation
 
 export class Word {
     constructor(data, container, engine) {
@@ -20,8 +21,14 @@ export class Word {
         this.addEventListeners();
 
         this.updateVisibility();
+
+        // Check if reductionist toolkit is already active when this word is created
+        if (this.core.engine.gameState.reductionistToolkitActive) {
+            this.addDoubleClickListener();
+        }
     }
 
+    // --- Getters/Setters delegate to core/physics ---
     get id() { return this.core.id; }
     get text() { return this.core.text; }
     get size() { return this.core.size; }
@@ -64,7 +71,13 @@ export class Word {
         const handleActivation = (event) => {
             if (!this.core.isVisible || this.core.isBeingDestroyed || this.interactionHandler.dragMoved) return;
             if (event.target === this.core.element || event.target.parentNode === this.core.element) {
-                this.activate();
+                 // Prevent activation if double-click is possible and active
+                if (this.core.engine.gameState.reductionistToolkitActive && this.core.doubleClickListenerRef) {
+                    // We might need a short delay to distinguish click from dblclick
+                    // For now, let's assume dblclick listener handles prevention if needed
+                } else {
+                    this.activate();
+                }
             }
         }
 
@@ -81,9 +94,20 @@ export class Word {
         const touchEndHandler = (e) => {
             if (this.interactionHandler.isDragging) {
                 if (!this.interactionHandler.dragMoved) {
-                    this.activate();
+                    // Check if double-tap occurred (simplistic check)
+                    const now = Date.now();
+                    const tapTime = now - (this.core.lastTapTime || 0);
+                    if (tapTime < 300 && this.core.engine.gameState.reductionistToolkitActive) {
+                         this.handleDoubleClick(); // Treat as double-tap
+                         this.core.lastTapTime = 0; // Reset tap time
+                    } else {
+                        this.activate(); // Treat as single tap (click)
+                        this.core.lastTapTime = now;
+                    }
                 }
                 handleInteraction(this.interactionHandler.endDrag, e.changedTouches[0]);
+            } else {
+                 // Handle tap without drag (if needed, might conflict with click)
             }
         };
 
@@ -92,10 +116,90 @@ export class Word {
         document.addEventListener('touchcancel', touchEndHandler);
 
         this.core.eventListeners = {
+            mousedown: (e) => handleInteraction(this.interactionHandler.startDrag, e),
+            click: handleActivation,
             touchstart: touchStartHandler,
             touchend: touchEndHandler,
             touchcancel: touchEndHandler
+            // Note: mousemove/mouseup are handled globally in Engine/main script usually
         };
+    }
+
+    addDoubleClickListener() {
+        if (!this.core.element || this.core.doubleClickListenerRef) return; // Already added
+
+        const listener = (e) => {
+            if (!this.core.isVisible || this.core.isBeingDestroyed) return;
+            e.preventDefault(); // Prevent potential default double-click behaviors
+            this.handleDoubleClick();
+        };
+
+        this.core.element.addEventListener('dblclick', listener);
+        this.core.doubleClickListenerRef = listener; // Store reference for removal
+        console.log(`Added double-click listener to ${this.id}`);
+    }
+
+    removeDoubleClickListener() {
+        if (!this.core.element || !this.core.doubleClickListenerRef) return; // Nothing to remove
+
+        this.core.element.removeEventListener('dblclick', this.core.doubleClickListenerRef);
+        this.core.doubleClickListenerRef = null; // Clear reference
+        console.log(`Removed double-click listener from ${this.id}`);
+    }
+
+    handleDoubleClick() {
+        console.log(`Double-click detected on ${this.id}`);
+        // Reductionist Toolkit Logic: Break the word if applicable
+        if (this.core.engine.gameState.reductionistToolkitActive) {
+            // No category restriction on double-click breakdown (GDD implies only activation restriction)
+            // if (this.ontologicalCategory === 'Macro') { // Uncomment this line to restrict breakdown to Macro only
+
+            // Find a "Micro" template (e.g., 'kairos')
+            const microTemplate = WORDS_DATA.find(w => w.ontologicalCategory === 'Micro') || WORDS_DATA[0]; // Fallback to first word if no micro
+
+            if (!microTemplate) {
+                console.error("Cannot perform reduction: No Micro word template found in WORDS_DATA.");
+                return;
+            }
+
+            const centerX = this.x + this.radius;
+            const centerY = this.y + this.radius;
+            const numFragments = 3;
+            const fragmentRadius = 30; // Spawn radius for fragments
+
+            console.log(`Breaking down ${this.id} into ${numFragments} fragments.`);
+
+            for (let i = 0; i < numFragments; i++) {
+                const angle = (i / numFragments) * Math.PI * 2;
+                const spawnX = centerX + Math.cos(angle) * fragmentRadius - microTemplate.size / 2;
+                const spawnY = centerY + Math.sin(angle) * fragmentRadius - microTemplate.size / 2;
+
+                // Create fragment data, inheriting school/methodology? Or use template's? Let's use template's for now.
+                const fragmentData = {
+                    ...microTemplate, // Copy base template
+                    id: `fragment_${this.id}_${i}_${Date.now()}`.slice(0,50), // Unique ID
+                    text: `${this.text.slice(0,3)} Frag.`, // Simple text indicator
+                    // Optionally inherit color or keep template's color
+                    colors: this.colors // Inherit color from parent
+                };
+
+                const newWord = this.engine.wordManager.createAndAddWord(fragmentData, this.container);
+                if (newWord) {
+                    newWord.x = spawnX;
+                    newWord.y = spawnY;
+                    newWord.vx = Math.cos(angle) * 1.5; // Push fragments outwards slightly
+                    newWord.vy = Math.sin(angle) * 1.5;
+                    newWord.updateElementPosition();
+                }
+            }
+
+            // Destroy the original word immediately after spawning fragments
+            this.destroy(true); // Skip animation for instant replacement
+
+            // } else {
+            //     console.log(`Reductionist Toolkit: ${this.id} (${this.ontologicalCategory}) cannot be broken down.`);
+            // } // End category check block
+        }
     }
 
     update(dt = 1) {
@@ -110,9 +214,13 @@ export class Word {
     }
 
     destroy(skipAnimation = false) {
+        this.removeDoubleClickListener(); // Ensure listener is removed on destruction
+
         if (this.core.eventListeners) {
+            // Remove document-level listeners specifically
             document.removeEventListener('touchend', this.core.eventListeners.touchend);
             document.removeEventListener('touchcancel', this.core.eventListeners.touchcancel);
+            // Element-specific listeners are removed when the element is destroyed
         }
         this.lifecycle.destroy(skipAnimation);
     }
