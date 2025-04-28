@@ -17,11 +17,15 @@ export class Engine {
         };
         this.lastTimestamp = 0;
         this.container = null;
+        // Add properties for global modifiers if needed by upgrades
+        this.fusionSuccessRateModifier = 1.0;
 
         // Initialize Managers and Systems
         this.screenManager = new ScreenManager(this);
-        this.physics = new Physics(this);
-        this.energyManager = new EnergyManager(this, 0, null); // Initial energy 0, display element set later
+        this.physics = new Physics(this); // Pass engine instance
+        // Initialize physics-related upgradeable properties
+        this.physics.collisionEnergyMultiplier = 1.0;
+        this.energyManager = new EnergyManager(this, 0, null);
         this.shopSystem = new ShopSystem(this);
         this.wordManager = new WordManager(this);
         this.upgradeSystem = new UpgradeSystem(this);
@@ -48,6 +52,11 @@ export class Engine {
              console.warn("Game loop already started.");
              return;
         }
+        // Initialize base word stats before starting loop / applying upgrades
+        if (this.upgradeSystem) {
+            this.upgradeSystem.initializeWordBaseStats();
+        }
+
         this.gameState.active = true;
         this.lastTimestamp = performance.now();
         console.log("Starting game loop");
@@ -73,6 +82,20 @@ export class Engine {
 
         // Start the loop
         requestAnimationFrame(loop);
+    }
+    
+    // Delegate energy addition to the EnergyManager
+    addEnergy(amount) {
+        if (this.energyManager) {
+            this.energyManager.addEnergy(amount);
+        } else {
+            console.error("EnergyManager not initialized!");
+        }
+    }
+    
+    // Getter for current energy
+    get currentEnergy() {
+        return this.energyManager ? this.energyManager.getEnergy() : 0;
     }
 
     updateGame(dt) {

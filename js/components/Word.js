@@ -15,7 +15,8 @@ export class Word {
         this.element = null;
 
         const wordDefinition = WORDS_DATA.find(wd => wd.id === this.id);
-        this.energyPotential = wordDefinition ? wordDefinition.energyPotential : 0;
+        this.baseEnergyPotential = wordDefinition ? wordDefinition.energyPotential : 0;
+        this.energyPotential = this.baseEnergyPotential; 
 
         this.x = 0;
         this.y = 0;
@@ -25,7 +26,8 @@ export class Word {
         this.pushForce = PHYSICS_CONFIG.PUSH_FORCE;
         this.maxSpeed = PHYSICS_CONFIG.MAX_SPEED;
         this.mass = Math.PI * this.radius * this.radius;
-        this.restitution = PHYSICS_CONFIG.RESTITUTION_RANGE[0] + Math.random() * (PHYSICS_CONFIG.RESTITUTION_RANGE[1] - PHYSICS_CONFIG.RESTITUTION_RANGE[0]);
+        this.baseRestitution = PHYSICS_CONFIG.RESTITUTION_RANGE[0] + Math.random() * (PHYSICS_CONFIG.RESTITUTION_RANGE[1] - PHYSICS_CONFIG.RESTITUTION_RANGE[0]);
+        this.restitution = this.baseRestitution; 
 
         this.isDragging = false;
         this.dragOffsetX = 0;
@@ -53,11 +55,6 @@ export class Word {
 
         this.container.appendChild(this.element);
 
-        const initialPosition = getRandomPosition(this.element, this.container);
-        this.x = initialPosition.x;
-        this.y = initialPosition.y;
-        this.updateElementPosition();
-
         this.addEventListeners();
     }
 
@@ -73,16 +70,26 @@ export class Word {
         window.addEventListener('mousemove', (e) => this.drag(e));
         window.addEventListener('mouseup', (e) => this.endDrag(e));
         this.element.addEventListener('touchstart', (e) => {
-            this.startDrag(e.touches[0]);
+            if (e.target === this.element || e.target.parentNode === this.element) {
+                this.startDrag(e.touches[0]);
+            }
         }, { passive: true });
         window.addEventListener('touchmove', (e) => {
             if (this.isDragging) {
-                e.preventDefault();
+                e.preventDefault(); 
                 this.drag(e.touches[0]);
             }
-        }, { passive: false });
-        window.addEventListener('touchend', (e) => this.endDrag(e.changedTouches[0]));
-        window.addEventListener('touchcancel', (e) => this.endDrag(e.changedTouches[0]));
+        }, { passive: false }); 
+        window.addEventListener('touchend', (e) => {
+            if (this.isDragging) { 
+                this.endDrag(e.changedTouches[0]);
+            }
+        });
+        window.addEventListener('touchcancel', (e) => {
+            if (this.isDragging) {
+                this.endDrag(e.changedTouches[0], true); 
+            }
+        });
     }
 
     update(dt = 1) {
@@ -113,22 +120,16 @@ export class Word {
         const topBoundary = 0;
         const bottomBoundary = containerRect.height - this.size;
 
-        if (nextX < leftBoundary) {
-            this.x = leftBoundary;
-            this.vx *= -this.restitution;
-        } else if (nextX > rightBoundary) {
-            this.x = rightBoundary;
-            this.vx *= -this.restitution;
+        if (nextX < leftBoundary || nextX > rightBoundary) {
+            this.x = Math.max(leftBoundary, Math.min(nextX, rightBoundary)); 
+            this.vx *= -this.restitution; 
         } else {
             this.x = nextX;
         }
 
-        if (nextY < topBoundary) {
-            this.y = topBoundary;
-            this.vy *= -this.restitution;
-        } else if (nextY > bottomBoundary) {
-            this.y = bottomBoundary;
-            this.vy *= -this.restitution;
+        if (nextY < topBoundary || nextY > bottomBoundary) {
+            this.y = Math.max(topBoundary, Math.min(nextY, bottomBoundary)); 
+            this.vy *= -this.restitution; 
         } else {
             this.y = nextY;
         }
@@ -137,7 +138,16 @@ export class Word {
     }
 
     updateElementPosition() {
-        this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
+        if (!isNaN(this.x) && !isNaN(this.y)) {
+            this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
+        } else {
+            console.warn(`Invalid position for word ${this.id}: (${this.x}, ${this.y}). Resetting to 0,0.`);
+            this.x = 0;
+            this.y = 0;
+            this.vx = 0;
+            this.vy = 0;
+            this.element.style.transform = `translate(0px, 0px)`;
+        }
     }
 
     activate() {
@@ -152,35 +162,36 @@ export class Word {
         if (this.engine && typeof this.engine.addEnergy === 'function') {
             this.engine.addEnergy(this.energyPotential);
         } else {
-            console.warn(`Word ${this.id}: Engine not available for energy harvesting.`);
+            console.warn(`Word ${this.id}: Engine or addEnergy function not available for energy harvesting.`);
         }
 
         setTimeout(() => {
             if (this.element && this.element.classList.contains('active')) {
                 this.element.classList.remove('active');
             }
-        }, 1500);
+        }, 1500); 
     }
 
     startDrag(e) {
         if (e.button && e.button !== 0) return;
 
         this.isDragging = true;
-        this.dragMoved = false;
+        this.dragMoved = false; 
 
         this.element.classList.add('dragging');
-        this.element.style.transition = 'none';
+        this.element.style.zIndex = 100; 
 
         const clientX = e.clientX;
         const clientY = e.clientY;
-        this.dragOffsetX = clientX - (this.x + this.radius);
-        this.dragOffsetY = clientY - (this.y + this.radius);
-        this.vx = 0;
-        this.vy = 0;
-        this.lastMouseX = clientX;
-        this.lastMouseY = clientY;
 
-        this.element.style.zIndex = 100;
+        const rect = this.element.getBoundingClientRect();
+        this.dragOffsetX = clientX - rect.left; 
+        this.dragOffsetY = clientY - rect.top; 
+
+        this.vx = 0; 
+        this.vy = 0;
+        this.lastMouseX = clientX; 
+        this.lastMouseY = clientY;
     }
 
     drag(e) {
@@ -191,18 +202,16 @@ export class Word {
 
         const dx = currentMouseX - this.lastMouseX;
         const dy = currentMouseY - this.lastMouseY;
-        if (!this.dragMoved && Math.sqrt(dx * dx + dy * dy) > 3) {
+
+        if (!this.dragMoved && Math.sqrt(dx * dx + dy * dy) > 5) { 
             this.dragMoved = true;
         }
 
-        let newCenterX = currentMouseX - this.dragOffsetX;
-        let newCenterY = currentMouseY - this.dragOffsetY;
+        let newX = currentMouseX - this.dragOffsetX;
+        let newY = currentMouseY - this.dragOffsetY;
 
         this.vx = dx * PHYSICS_CONFIG.DRAG_THROW_FACTOR;
         this.vy = dy * PHYSICS_CONFIG.DRAG_THROW_FACTOR;
-
-        this.x = newCenterX - this.radius;
-        this.y = newCenterY - this.radius;
 
         const containerRect = this.container.getBoundingClientRect();
         const leftBoundary = 0;
@@ -210,8 +219,8 @@ export class Word {
         const topBoundary = 0;
         const bottomBoundary = containerRect.height - this.size;
 
-        this.x = Math.max(leftBoundary, Math.min(this.x, rightBoundary));
-        this.y = Math.max(topBoundary, Math.min(this.y, bottomBoundary));
+        this.x = Math.max(leftBoundary, Math.min(newX, rightBoundary));
+        this.y = Math.max(topBoundary, Math.min(newY, bottomBoundary));
 
         this.updateElementPosition();
 
@@ -221,160 +230,210 @@ export class Word {
         createTrail(this.x + this.radius, this.y + this.radius, this.element, this.container);
     }
 
-    endDrag(e) {
+    endDrag(e, cancelled = false) {
         if (this.isDragging) {
             this.isDragging = false;
             this.element.classList.remove('dragging');
-            this.element.style.zIndex = '';
+            this.element.style.zIndex = ''; 
 
-            if (!this.dragMoved) {
-                this.vx = 0;
+            if (!this.dragMoved && !cancelled) {
+                this.vx = 0; 
                 this.vy = 0;
-                this.activate();
-            } else {
+                this.activate(); 
+            } else if (!cancelled) { 
                 const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-                const maxThrowSpeed = this.maxSpeed * 3;
+                const maxThrowSpeed = this.maxSpeed * 2.5; 
                 if (speed > maxThrowSpeed) {
                     this.vx = (this.vx / speed) * maxThrowSpeed;
                     this.vy = (this.vy / speed) * maxThrowSpeed;
                 }
                 
-                // Check for fusion with other words
                 this.checkForFusion();
+            } else {
+                this.vx = 0;
+                this.vy = 0;
             }
         }
         this.dragMoved = false;
     }
 
     checkForFusion() {
-        if (!this.engine) return;
-        
+        if (!this.engine || !this.engine.gameState || !this.engine.gameState.words) {
+            console.warn("Cannot check for fusion: engine or words list missing.");
+            return;
+        }
+
         const words = this.engine.gameState.words;
         const centerX = this.x + this.radius;
         const centerY = this.y + this.radius;
-        
+
         for (const otherWord of words) {
-            if (otherWord === this) continue;
-            
+            if (otherWord === this || !otherWord.element || otherWord.isBeingDestroyed) continue; 
+
             const otherCenterX = otherWord.x + otherWord.radius;
             const otherCenterY = otherWord.y + otherWord.radius;
-            
+
             const dx = centerX - otherCenterX;
             const dy = centerY - otherCenterY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            // If words are very close, attempt fusion
-            if (distance < this.radius + otherWord.radius + 10) {
+            const distanceSq = dx * dx + dy * dy; 
+            const touchDistance = this.radius + otherWord.radius + 5; 
+            const touchDistanceSq = touchDistance * touchDistance;
+
+            if (distanceSq < touchDistanceSq) {
+                console.log(`Potential fusion detected between ${this.id} and ${otherWord.id}`);
                 this.attemptFusion(otherWord);
-                break;
             }
         }
     }
-    
+
     attemptFusion(otherWord) {
-        // Calculate fusion affinity based on word properties
-        const affinityScore = Math.random(); // Simplified - could be based on word properties
-        const energyCost = 5; // Energy required for fusion attempt
-        
-        if (affinityScore > 0.3 && this.engine.currentEnergy >= energyCost) {
-            this.engine.addEnergy(-energyCost); // Subtract energy cost
-            
-            // Visual effect at fusion point
+        if (!this.engine) return;
+
+        const baseAffinity = 0.4; 
+        const affinityScore = Math.random() * (this.engine.fusionSuccessRateModifier || 1);
+        const energyCost = 15; 
+        const fusionThreshold = 1 - baseAffinity; 
+
+        console.log(`Attempting fusion: Affinity Roll ${affinityScore.toFixed(2)} vs Threshold ${fusionThreshold.toFixed(2)}, Cost ${energyCost}, Energy ${this.engine.currentEnergy}`);
+
+        if (affinityScore > fusionThreshold && this.engine.currentEnergy >= energyCost) {
+            this.engine.addEnergy(-energyCost); 
+
             const fusionX = (this.x + this.radius + otherWord.x + otherWord.radius) / 2;
             const fusionY = (this.y + this.radius + otherWord.y + otherWord.radius) / 2;
-            
-            // Create fusion effect
+
             const fusionColor = this.blendColors(this.colors.primary, otherWord.colors.primary);
+
             createSpecialEffect('fusion', fusionX, fusionY, fusionColor, 30);
-            
-            // Show fusion message
+
             this.showFusionMessage(this.text, otherWord.text, fusionX, fusionY);
-            
-            // Random chance to generate a new word from fusion
-            if (Math.random() > 0.7) {
+
+            const createNewWordChance = 0.6; 
+            if (Math.random() < createNewWordChance) {
+                console.log("Fusion successful: Creating new word.");
                 this.createFusionWord(otherWord, fusionX, fusionY, fusionColor);
+                this.destroy();
+                otherWord.destroy();
+            } else {
+                console.log("Fusion successful: Granting bonus energy.");
+                this.engine.addEnergy(25); 
+                const pushForce = 5;
+                const angle = Math.atan2(this.y - otherWord.y, this.x - otherWord.x);
+                this.applyImpulse(Math.cos(angle) * pushForce, Math.sin(angle) * pushForce);
+                otherWord.applyImpulse(-Math.cos(angle) * pushForce, -Math.sin(angle) * pushForce);
             }
+
+        } else {
+            console.log("Fusion failed (low affinity or insufficient energy).");
+            const pushForce = 2;
+            const angle = Math.atan2(this.y - otherWord.y, this.x - otherWord.x);
+            this.applyImpulse(Math.cos(angle) * pushForce, Math.sin(angle) * pushForce);
+            otherWord.applyImpulse(-Math.cos(angle) * pushForce, -Math.sin(angle) * pushForce);
         }
     }
-    
+
     createFusionWord(otherWord, x, y, color) {
-        if (!this.engine) return;
-        
-        // Generate fusion word properties
+        if (!this.engine || !this.engine.wordManager) return;
+
         const fusionText = this.generateFusionName(this.text, otherWord.text);
-        const fusionSize = (this.size + otherWord.size) / 2 * (0.8 + Math.random() * 0.4);
-        const energyBonus = Math.ceil((this.energyPotential + otherWord.energyPotential) * 0.6);
-        
-        // Create fusion word data
+        const fusionSize = Math.max(60, Math.min(200, (this.size + otherWord.size) / 2 * (0.9 + Math.random() * 0.2))); 
+        const energyBonus = Math.ceil((this.energyPotential + otherWord.energyPotential) * 0.75); 
+
         const fusionData = {
-            id: 'fusion_' + Date.now(),
+            id: `fusion_${this.id}_${otherWord.id}_${Date.now()}`.slice(0, 50), 
             text: fusionText,
             size: fusionSize,
             colors: {
                 primary: color,
                 secondary: this.blendColors(this.colors.secondary, otherWord.colors.secondary)
             },
-            energyPotential: energyBonus
+            energyPotential: energyBonus 
         };
-        
-        // Create and add the new word
-        const fusionWord = new Word(fusionData, this.container, this.engine);
-        fusionWord.x = x - fusionWord.radius;
-        fusionWord.y = y - fusionWord.radius;
-        fusionWord.updateElementPosition();
-        
-        // Add to engine word list
-        this.engine.gameState.words.push(fusionWord);
-        
-        // Award bonus energy for successful fusion
-        this.engine.addEnergy(10);
-    }
-    
-    generateFusionName(word1, word2) {
-        // Simple fusion name generation
-        const parts1 = word1.split(' ');
-        const parts2 = word2.split(' ');
-        
-        if (parts1.length > 1 && parts2.length > 1) {
-            return `${parts1[0]} ${parts2[1]}`;
-        } else if (parts1.length > 1) {
-            return `${parts1[0]} ${parts2[0]}`;
-        } else if (parts2.length > 1) {
-            return `${parts1[0]} ${parts2[1]}`;
+
+        const fusionWord = this.engine.wordManager.createAndAddWord(fusionData, this.container, true); 
+
+        if (fusionWord) {
+            fusionWord.x = x - fusionWord.radius;
+            fusionWord.y = y - fusionWord.radius;
+            fusionWord.vx = (Math.random() - 0.5) * 2;
+            fusionWord.vy = (Math.random() - 0.5) * 2;
+            fusionWord.updateElementPosition();
+
+            this.engine.addEnergy(50); 
+            console.log(`Created fusion word: ${fusionWord.id} (${fusionWord.text})`);
         } else {
-            // Combine parts of words
-            const prefix = parts1[0].substring(0, Math.ceil(parts1[0].length / 2));
-            const suffix = parts2[0].substring(Math.floor(parts2[0].length / 2));
-            return prefix + suffix;
+            console.error("Failed to create fusion word instance.");
         }
     }
-    
-    blendColors(color1, color2) {
-        // Convert hex to RGB, blend, convert back to hex
-        const parseColor = (hexColor) => {
-            const hex = hexColor.slice(1);
-            return {
-                r: parseInt(hex.slice(0, 2), 16),
-                g: parseInt(hex.slice(2, 4), 16),
-                b: parseInt(hex.slice(4, 6), 16)
-            };
-        };
-        
-        const c1 = parseColor(color1);
-        const c2 = parseColor(color2);
-        
-        const blend = {
-            r: Math.floor((c1.r + c2.r) / 2),
-            g: Math.floor((c1.g + c2.g) / 2),
-            b: Math.floor((c1.b + c2.b) / 2)
-        };
-        
-        return `#${blend.r.toString(16).padStart(2, '0')}${blend.g.toString(16).padStart(2, '0')}${blend.b.toString(16).padStart(2, '0')}`;
+
+    generateFusionName(word1, word2) {
+        const parts1 = word1.split(' ');
+        const parts2 = word2.split(' ');
+        const w1 = parts1[0]; 
+        const w2 = parts2[0];
+
+        const methods = [
+            () => `${w1.substring(0, Math.ceil(w1.length / 2))}${w2.substring(Math.floor(w2.length / 2))}`, 
+            () => `${w2.substring(0, Math.ceil(w2.length / 2))}${w1.substring(Math.floor(w1.length / 2))}`, 
+            () => `${w1.slice(0, 3)}${w2.slice(-3)}`, 
+            () => `${w1}-${w2}`.substring(0,15), 
+        ];
+
+        const chosenMethod = methods[Math.floor(Math.random() * methods.length)];
+        let fusedName = chosenMethod();
+
+        fusedName = fusedName.charAt(0).toUpperCase() + fusedName.slice(1);
+
+        if (parts1.length > 1 && parts2.length > 1 && Math.random() > 0.5) {
+            const descriptor = Math.random() > 0.5 ? parts1[1] : parts2[1];
+            fusedName += ` ${descriptor}`;
+        } else if (parts1.length > 1 && Math.random() > 0.3) {
+            fusedName += ` ${parts1[1]}`;
+        } else if (parts2.length > 1 && Math.random() > 0.3) {
+            fusedName += ` ${parts2[1]}`;
+        }
+
+        return fusedName.substring(0, 25); 
     }
-    
+
+    blendColors(color1, color2) {
+        try {
+            const parseColor = (hexColor) => {
+                if (!hexColor || !hexColor.startsWith('#') || hexColor.length !== 7) {
+                    return { r: 128, g: 128, b: 128 }; 
+                }
+                const hex = hexColor.slice(1);
+                const r = parseInt(hex.slice(0, 2), 16);
+                const g = parseInt(hex.slice(2, 4), 16);
+                const b = parseInt(hex.slice(4, 6), 16);
+                if (isNaN(r) || isNaN(g) || isNaN(b)) {
+                    return { r: 128, g: 128, b: 128 };
+                }
+                return { r, g, b };
+            };
+
+            const c1 = parseColor(color1);
+            const c2 = parseColor(color2);
+
+            const blend = {
+                r: Math.floor((c1.r + c2.r) / 2),
+                g: Math.floor((c1.g + c2.g) / 2),
+                b: Math.floor((c1.b + c2.b) / 2)
+            };
+
+            const toHex = (c) => c.toString(16).padStart(2, '0');
+            return `#${toHex(blend.r)}${toHex(blend.g)}${toHex(blend.b)}`;
+
+        } catch (error) {
+            console.error("Error blending colors:", color1, color2, error);
+            return '#ffffff'; 
+        }
+    }
+
     showFusionMessage(word1, word2, x, y) {
         const message = document.createElement('div');
-        message.innerText = `${word1} + ${word2}`;
+        message.innerText = `${word1.split(' ')[0]} + ${word2.split(' ')[0]}`; 
+
         message.style.position = 'absolute';
         message.style.left = `${x}px`;
         message.style.top = `${y}px`;
@@ -385,8 +444,7 @@ export class Word {
         message.style.pointerEvents = 'none';
         message.style.zIndex = '200';
         this.container.appendChild(message);
-        
-        // Animate and remove
+
         message.animate([
             { opacity: 1, transform: 'translate(-50%, -50%)' },
             { opacity: 0, transform: 'translate(-50%, -120%)' }
@@ -399,11 +457,19 @@ export class Word {
             }
         };
     }
-    
+
     applyImpulse(impulseX, impulseY) {
         if (this.mass > 0.01) {
             this.vx += impulseX / this.mass;
             this.vy += impulseY / this.mass;
         }
+    }
+
+    destroy() {
+        this.element.classList.add('destroy');
+        this.isBeingDestroyed = true;
+        setTimeout(() => {
+            this.container.removeChild(this.element);
+        }, 1000);
     }
 }
