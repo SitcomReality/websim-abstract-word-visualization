@@ -216,7 +216,7 @@ export class Physics {
 
     showCollisionEnergyEffect(x, y, amount) {
         const energyText = document.createElement('div');
-        energyText.className = 'collision-energy';
+        energyText.className = 'collision-energy dopamine-pop';
         energyText.textContent = `+${amount}`;
         
         energyText.style.position = 'absolute';
@@ -232,8 +232,8 @@ export class Physics {
         this.engine.container.appendChild(energyText);
         
         energyText.animate([
-            { opacity: 1, transform: 'translate(-50%, -50%)' },
-            { opacity: 0, transform: 'translate(-50%, -100%)' }
+            { opacity: 1, transform: 'translate(-50%, -50%) scale(1.2)' },
+            { opacity: 0, transform: 'translate(-50%, -100%) scale(0.8)' }
         ], {
             duration: 1000,
             easing: 'ease-out'

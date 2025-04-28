@@ -27,3 +27,14 @@
     z-index: 50;
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
+
+.energy-particle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 100;
+    transform: translate(-50%, -50%);
+}
+
+.combo-bonus-message {
+    pointer-events: none;
+}

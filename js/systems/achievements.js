@@ -41,6 +41,35 @@ export class AchievementSystem {
                 progressGoal: 10,
                 condition: () => this.getAchievementById('master_upgrader').progress >= 10,
                 icon: '⚙️'
+            },
+            {
+                id: 'combo_novice',
+                name: 'Combo Novice',
+                description: 'Reach a 5x combo streak',
+                achieved: false,
+                energyReward: 75,
+                condition: () => false, // Triggered by combo system
+                icon: '🔄'
+            },
+            {
+                id: 'combo_master',
+                name: 'Combo Master',
+                description: 'Reach a 10x combo streak',
+                achieved: false,
+                energyReward: 150,
+                condition: () => false, // Triggered by combo system
+                icon: '⚡'
+            },
+            {
+                id: 'energy_boost',
+                name: 'Energy Rush',
+                description: 'Gain 100+ energy in under 10 seconds',
+                achieved: false,
+                energyReward: 100,
+                progress: 0,
+                progressGoal: 100,
+                condition: () => this.getAchievementById('energy_boost').progress >= 100,
+                icon: '🚀'
             }
         ];
         

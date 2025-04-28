@@ -168,7 +168,12 @@ export class Word {
     activate() {
         if (this.element.classList.contains('active') || this.isDragging || this.isBeingDestroyed) return;
 
-        this.element.classList.add('active');
+        this.element.classList.add('active', 'dopamine-pop');
+        
+        // Remove animation class after it completes
+        setTimeout(() => {
+            if (this.element) this.element.classList.remove('dopamine-pop');
+        }, 300);
 
         const centerX = this.x + this.radius;
         const centerY = this.y + this.radius;
@@ -178,6 +183,11 @@ export class Word {
         let energyMultiplier = 1;
         if (this.engine.resonanceSystem) {
             energyMultiplier = this.engine.resonanceSystem.wordActivated(this);
+        }
+        
+        // Apply combo system multiplier if it exists
+        if (this.engine.comboSystem) {
+            energyMultiplier *= this.engine.comboSystem.registerActivation();
         }
 
         if (this.engine && typeof this.engine.addEnergy === 'function') {
@@ -193,6 +203,9 @@ export class Word {
             if (this.engine.achievementSystem) {
                 this.engine.achievementSystem.incrementAchievementProgress('word_activator');
             }
+            
+            // Add floating particles for extra visual feedback
+            this.createFloatingRewardParticles(centerX, centerY, Math.ceil(energyGained));
         } else {
             console.warn(`Word ${this.id}: Engine or addEnergy function not available for energy harvesting.`);
         }
@@ -202,6 +215,49 @@ export class Word {
                 this.element.classList.remove('active');
             }
         }, 1500);
+    }
+
+    createFloatingRewardParticles(x, y, amount) {
+        const particleCount = Math.min(Math.ceil(amount / 5), 8); // Scale particles with energy, max 8
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'energy-particle';
+            particle.textContent = '+' + (i === 0 ? amount : '');
+            
+            particle.style.position = 'absolute';
+            particle.style.left = `${x + (Math.random() - 0.5) * 30}px`;
+            particle.style.top = `${y}px`;
+            particle.style.color = '#4caf50';
+            particle.style.fontWeight = 'bold';
+            particle.style.fontSize = i === 0 ? '20px' : '14px';
+            particle.style.textShadow = '0 0 5px rgba(0,0,0,0.8)';
+            particle.style.zIndex = '100';
+            particle.style.pointerEvents = 'none';
+            
+            this.container.appendChild(particle);
+            
+            const angle = (Math.random() * Math.PI) - (Math.PI/2); // Upward trajectory
+            const speed = 2 + Math.random() * 3;
+            
+            particle.animate([
+                { 
+                    transform: 'translate(-50%, -50%)', 
+                    opacity: 1 
+                },
+                { 
+                    transform: `translate(${Math.cos(angle) * 100}px, ${Math.sin(angle) * 100 - 50}px) scale(${i === 0 ? 1.2 : 0.8})`,
+                    opacity: 0 
+                }
+            ], {
+                duration: 800 + Math.random() * 400,
+                easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)'
+            }).onfinish = () => {
+                if (this.container.contains(particle)) {
+                    this.container.removeChild(particle);
+                }
+            };
+        }
     }
 
     showMultiplierEffect(multiplier) {

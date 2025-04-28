@@ -10,6 +10,7 @@ import { UpgradeSystem } from 'systems/upgrades.js';
 import { FusionSystem } from 'systems/fusion.js';
 import { AchievementSystem } from 'systems/achievements.js';
 import { ResonanceSystem } from 'systems/resonance.js';
+import { ComboSystem } from 'systems/ComboSystem.js';
 
 export class Engine {
     constructor() {
@@ -35,6 +36,7 @@ export class Engine {
         this.fusionSystem = new FusionSystem(this);
         this.achievementSystem = new AchievementSystem(this);
         this.resonanceSystem = new ResonanceSystem(this);
+        this.comboSystem = new ComboSystem(this);
 
         // Collision sound related properties - moved potentially to an AudioManager later
         this.collisionSounds = {
