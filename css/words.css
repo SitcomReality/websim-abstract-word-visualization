@@ -33,10 +33,6 @@
     z-index: 10; 
 }
 
-.word.dopamine-pop {
-    animation: pop-scale 0.3s ease-out;
-}
-
 .word.dragging {
     cursor: grabbing;
     box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
@@ -103,10 +99,4 @@
     0% { transform: scale(0.8); opacity: 0.7; }
     50% { transform: scale(1.2); opacity: 1; }
     100% { transform: scale(0.8); opacity: 0.7; }
-}
-
-@keyframes pop-scale {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
 }

@@ -58,9 +58,10 @@ export class Word {
         this.element.style.height = `${this.size}px`;
         this.element.style.background = `radial-gradient(circle, ${this.colors.primary}, ${this.colors.secondary})`;
         this.element.style.position = 'absolute';
-        this.element.style.left = '0px';
-        this.element.style.top = '0px';
-        this.element.style.transform = `translate(0px, 0px)`;
+        this.element.style.left = '0px'; // Base position for transform origin
+        this.element.style.top = '0px';  // Base position for transform origin
+        // Initialize position via transform
+        this.updateElementPosition();
 
         this.container.appendChild(this.element);
 
@@ -128,6 +129,7 @@ export class Word {
 
         const containerRect = this.container.getBoundingClientRect();
         if (containerRect.width <= 0 || containerRect.height <= 0) {
+             // If container has no size, just update position without bounds check
             this.x = nextX;
             this.y = nextY;
         } else {
@@ -171,17 +173,21 @@ export class Word {
     }
 
     updateElementPosition() {
-        if (!isNaN(this.x) && !isNaN(this.y) && this.element) {
+        // Ensure x and y are valid numbers before applying the transform
+        if (this.element && !isNaN(this.x) && !isNaN(this.y)) {
             this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
         } else if (this.element) {
-            console.warn(`Invalid position for word ${this.id}: (${this.x}, ${this.y}). Resetting to 0,0.`);
-            this.x = 0;
-            this.y = 0;
+            // Fallback if position becomes invalid, log warning and reset
+            console.warn(`Invalid position for word ${this.id}: (${this.x}, ${this.y}). Resetting to center.`);
+            const containerRect = this.container.getBoundingClientRect();
+            this.x = (containerRect.width - this.size) / 2 || 0;
+            this.y = (containerRect.height - this.size) / 2 || 0;
             this.vx = 0;
             this.vy = 0;
-            this.element.style.transform = `translate(0px, 0px)`;
+            this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
         }
     }
+
 
     activate() {
         if (this.element.classList.contains('active') || this.isDragging || this.isBeingDestroyed) return;
@@ -197,12 +203,20 @@ export class Word {
         this.lastActivationTime = now;
         this.activationCount++;
 
-        this.element.classList.add('active', 'dopamine-pop');
+        this.element.classList.add('active'); // Add active class for general styling (e.g., brighter shadow)
 
-        // Remove animation class after it completes
-        setTimeout(() => {
-            if (this.element) this.element.classList.remove('dopamine-pop');
-        }, 300);
+        // Apply pop animation using Web Animations API
+        if (this.element) {
+            const currentTransform = this.element.style.transform || `translate(${this.x}px, ${this.y}px)`;
+            this.element.animate([
+                { transform: `${currentTransform} scale(1)` },
+                { transform: `${currentTransform} scale(1.2)` },
+                { transform: `${currentTransform} scale(1)` }
+            ], {
+                duration: 300,
+                easing: 'ease-out'
+            });
+        }
 
         const centerX = this.x + this.radius;
         const centerY = this.y + this.radius;
@@ -249,7 +263,7 @@ export class Word {
             if (this.element && this.element.classList.contains('active')) {
                 this.element.classList.remove('active');
             }
-        }, 1500);
+        }, 1500); // Duration the 'active' state styles persist
     }
 
     showCooldownFeedback() {
@@ -381,7 +395,7 @@ export class Word {
             }
             this.element = null;
         } else {
-            this.element.classList.add('destroy');
+            this.element.classList.add('destroy'); // Use class for potential styling
             this.element.style.pointerEvents = 'none';
             const currentTransform = this.element.style.transform || 'translate(0,0)';
             this.element.animate([
