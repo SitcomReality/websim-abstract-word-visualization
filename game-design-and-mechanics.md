@@ -1,191 +1,225 @@
-# WordSphere: Lexical Physics - Game Design Document
+# Esoteric Sphere: Philosophical Physics - Game Design Document
 
-## Overview
-WordSphere is an interactive web-based experience that transforms abstract words into tangible, interactive entities within a physics playground. Players interact with word-bubbles through movement, clicks, and drags, triggering unique visual effects while progressing through an addictive loop of collection, combination, and creation.
+## Concept Overview
+Esoteric Sphere is an interactive philosophical playground where abstract concepts take physical form. Players manipulate philosophical terms as tangible spheres, creating resonance chains and discovering deeper meaning through fusion and interaction. The experience blends meditative exploration with strategic progression through energy harvesting.
 
-## Core Design Philosophy
-- **Visual Abstraction**: Transform linguistic concepts into visual experiences
-- **Playful Interaction**: Encourage exploration through organic, intuitive interactions
-- **Synesthetic Experience**: Create associations between words, movements, colors, and effects
-- **Emergent Gameplay**: Allow users to discover interactions rather than explicitly teaching them
-- **Compulsion Loop**: Balance skill expression, progression, and randomized rewards
+## Core Gameplay Loop
+
+### Primary Loop
+1. **Exploration**: Interact with philosophical concept spheres through clicks and drags
+2. **Energy Harvesting**: Activate words to collect energy and create resonance chains
+3. **Strategic Investment**: Spend energy on upgrades that enhance word properties and mechanics
+4. **Fusion Discovery**: Combine compatible words to create new philosophical concepts
+5. **Progression**: Unlock deeper philosophical concepts and game mechanics
+
+### Secondary Loops
+- **Resonance Mastery**: Discover and chain word combinations for multiplier effects
+- **Collection & Discovery**: Find all possible word combinations and effects
+- **Mastery & Optimization**: Maximize energy generation through strategic play
 
 ## Core Mechanics
 
-### Word Bubbles
-- Each abstract word exists as a floating bubble in the space
-- Words have unique:
-  - Colors (primary and secondary gradient)
-  - Size / Radius / Mass
-  - Effect type
-  - Movement patterns (Physics-based: velocity, damping, random push, boundary collision, inter-word collision)
-  - Rarity tier (Common, Uncommon, Rare, Epic, Legendary)
-  - Energy potential and generation rate
+### Philosophical Spheres
+Each philosophical sphere represents an abstract concept with unique properties:
+- **Logos** (Universal reason): Explosive energy release, radiating outward
+- **Kairos** (Perfect moment): Creates spiraling vortices, moments of opportunity
+- **Aether** (Universal substrate): Generates waves affecting nearby concepts
+- **Apeiron** (The boundless): Transcends boundaries with fade effects
+- **Quintessence** (Fifth essence): Pulses with cosmic energy
+- **Monad** (Fundamental unity): Creates satellites orbiting primary concept
+- **Anima** (Living principle): Rains down vital energy
+- **Entropy** (Increasing disorder): Accelerates all systems into chaos
 
-### Interaction Mechanics
-1. **Floating Animation**: Words gently float based on simple physics simulation (velocity, damping, small random forces). They bounce off screen edges and each other.
-2. **Click Activation**: Clicking (or tapping) a word activates its special effect and harvests energy. Activates only if not part of a drag action.
-3. **Dragging**: Users can drag words around the screen using mouse or touch. Dragging imparts velocity for a "throw" effect on release.
-4. **Trail Generation**: Dragging words leaves ephemeral trails behind.
-5. **Effect Triggering**: Each word creates a unique visual effect when activated (clicked/tapped).
-6. **Collision**: Words collide with each other realistically, based on their mass and bounciness (restitution). Overlapping words are pushed apart.
+Each sphere has properties that affect gameplay:
+- **Energy Potential**: Base energy generated when activated
+- **Resonance Affinity**: Compatibility with other concepts in chains
+- **Mass**: Physical weight affecting movement and collisions
+- **Effect Type**: Unique visual and mechanical effect when activated
+- **Rarity**: Determines base value and potential
 
-### New Core Systems
+### Interaction Systems
 
-#### Energy Harvesting & Progression System
-- Each word generates energy when clicked
-- Energy harvesting rate based on:
-  - Word rarity tier
-  - Time since last click (critical timing bonus)
-  - Current resonance chains (combos)
-  - Lexical affinity connections
-- Energy used to unlock:
-  - New word slots
-  - Word upgrades
-  - Special abilities
-  - Environmental modifiers
+#### 1. Energy Harvesting
+- Click/tap spheres to activate them and harvest energy
+- Energy is the primary progression currency
+- Harvesting efficiency increases through:
+  - Resonance chains (up to 5x multiplier)
+  - Combo timing (consecutive activations)
+  - Upgrades (permanent enhancements)
+  - Collision kinetics (strategic movement)
 
-#### Lexical Resonance Chains
-- Clicking words in specific patterns creates resonance chains
-- Different chain types:
-  - **Etymological**: Words sharing linguistic roots
-  - **Semantic**: Words with related meanings
-  - **Phonetic**: Words with similar sounds
-  - **Chromatic**: Words with complementary colors
-- Chain bonuses:
-  - Energy multipliers
-  - Temporary effect enhancement
-  - Chance to spawn rare word fragments
+#### 2. Philosophical Resonance
+Activating compatible concepts in sequence creates resonance chains:
+- **Etymological Resonance**: Words sharing linguistic roots (Logos-Aether)
+- **Semantic Resonance**: Words with related meanings (Apeiron-Entropy)
+- **Phonetic Resonance**: Words with similar sounds (Kairos-Anima)
+- **Chromatic Resonance**: Words with complementary colors (Entropy-Quintessence)
 
-#### Word Fusion & Evolution
-- Drag two compatible words together to attempt fusion
-- Fusion success based on:
-  - Lexical affinity score
-  - Energy investment
-  - RNG factor (influenced by player luck stat)
-- Successful fusion creates:
-  - New hybrid word with combined properties
-  - Possible discovery of legendary words
-  - Emergent effects from new combinations
+Successful chains:
+- Multiply energy generation (stacking up to 5x)
+- Create temporary field effects
+- Reveal hidden connections between concepts
+- Decay over time (6-12 seconds), encouraging rhythmic play
 
-#### Bullet Patterns & Projectile Systems
-- Words can emit patterned projectiles when activated
-- Projectile types:
-  - **Lexemes**: Fast, straight-line projectiles that split words they hit
-  - **Phonemes**: Curved projectiles that temporarily boost word energy generation
-  - **Morphemes**: Homing projectiles that create temporary word bindings
-- Pattern complexity increases with word rarity
-- Skill-based interception for bonus effects
+#### 3. Concept Fusion
+Dragging compatible spheres together initiates fusion:
+- Requires sufficient energy (cost: 15 units)
+- Success based on conceptual compatibility and upgrades
+- Creates new hybrid philosophies with combined properties
+- Outcomes:
+  - New word creation (60% chance)
+  - Energy bonus (40% chance)
+  - Special effects and achievements
 
-#### World Events & Challenges
-- Timed events affect gameplay environment:
-  - **Lexical Storm**: Increased word movement, higher energy generation
-  - **Semantic Shift**: Words temporarily change meanings and effects
-  - **Etymological Regression**: Ancient word forms appear with high value
-- Challenge phases require strategic response:
-  - Target energy harvesting quotas
-  - Create specific resonance patterns
-  - Defend valuable words from decay
+#### 4. Kinetic Interactions
+- Spheres collide realistically based on mass and physical properties
+- High-velocity collisions generate small amounts of energy
+- Strategic positioning can create chain reactions
+- Upgrades can enhance physical properties for better flow
 
-#### Word Property Matrix
-- Each word has a property matrix (Excel-like stats)
-- Core properties:
-  - Energy potential (base energy generation)
-  - Resonance factor (chain multiplier)
-  - Stability (resistance to movement)
-  - Volatility (random effect chance)
-  - Clarity (effect potency)
-  - Affinity (fusion compatibility)
-- Properties can be upgraded through progression
+### Progression Systems
 
-### Effect System
-Each word has a signature effect that represents its abstract meaning:
+#### 1. Shop Upgrades
+Energy can be spent on permanent upgrades:
+- **Energy Surge**: Increases base energy from all activations (+10% per level)
+- **Kinetic Amplifier**: Boosts energy from collisions (+50% per level)
+- **Lexical Affinity**: Improves fusion success rate (+15% per level)
+- **Elasticity Enhancement**: Makes concepts more reactive and bouncy
+- **Harmonic Resonator**: Extends resonance chain duration (+2s per level)
+- **Resonance Amplifier**: Increases resonance chain multipliers (+20% per level)
 
-| Word | Effect Type | Visual Representation | Gameplay Effect |
-|------|-------------|------------------------|-----------------|
-| Smorma | Explosion | Particles radiating outward | Pushes other words away, energy burst |
-| Pips | Spiral | Particles moving in spiral patterns | Creates vortex, attracts nearby words |
-| Tine | Wave | Concentric rings expanding outward | Temporarily increases all words' energy generation |
-| Elusive | Fade | Particles that fade in and out | Creates "ghost" copies that generate bonus energy |
-| Paradiastolic | Pulse | Rhythmic pulsating circles | Synchronizes nearby words for chain bonuses |
-| Perihelion | Orbit | Particles orbiting around a central point | Creates satellite words that orbit and boost the primary word |
-| Scolflocs | Rain | Particles falling like raindrops | Scattered energy drops that can be collected |
-| Hyperbolic | Hyper | Particles accelerating along hyperbolic curves | Temporarily accelerates all physics, increasing chaos and potential rewards |
+#### 2. Achievement System
+Completing challenges unlocks rewards:
+- **Lexical Alchemist**: First successful fusion (+100 energy)
+- **Energy Hoarder**: Accumulate 500 energy (+50 energy)
+- **Wordsmith**: Activate words 50 times (+75 energy)
+- **Upgrade Master**: Purchase 10 upgrades (+120 energy)
+- **Combo Novice/Master**: Achieve combo streaks (+75/+150 energy)
+- **Energy Rush**: Gain 100+ energy in under 10 seconds (+100 energy)
 
-### Roguelike Elements
-- **Procedural Generation**: Each play session generates a unique word pool
-- **Persistent Upgrades**: Meta-progression between sessions
-- **Run-based Progression**: Limited time or energy each "run" before reset
-- **Random Encounters**: Unexpected word phenomena and rare discoveries
-- **Risk/Reward Decisions**: Invest in current words or save for future opportunities
+#### 3. Discovery Progression
+- New philosophical concepts become available through fusion
+- Higher-tier concepts yield more energy and have stronger effects
+- Undiscovered combinations are hinted at through resonance patterns
+- Each discovery is recorded in a philosophical codex (future feature)
 
-### Word Construction System
-- Players can discover word fragments from activations and fusions
-- Fragments can be assembled into custom words with player-selected properties
-- Custom words inherit properties based on their fragments
-- Mechanical assembly interface inspired by the Wild Wild West mechanical spider:
-  - Connect fragments through intricate clockwork mechanisms
-  - Balance word properties through gear ratios and linkages
-  - Add decorative elements for personalization
+## Advanced Mechanics (Progression Unlocks)
+
+### 1. Metaphysical Fields
+- After specific upgrade thresholds, concepts begin generating ambient fields
+- Fields influence nearby concepts based on philosophical relationships
+- Strategic placement creates harmonious or discordant interactions
+- Fields can be visualized through a toggle option
+
+### 2. Philosophical Schools
+- After discovering specific concept combinations, players can align with schools of thought
+- Each school provides unique bonuses and gameplay alterations:
+  - **Rationalism**: Enhanced Logos effects, improved energy from reasoned combinations
+  - **Empiricism**: Better physical interactions, collision bonuses
+  - **Idealism**: Strengthened concept formation, fusion benefits
+  - **Materialism**: Physical property enhancements, mass and momentum bonuses
+
+### 3. Dialectical Synthesis
+- Advanced fusion mechanic unlocked after 10 successful fusions
+- Combine three concepts in a triangular arrangement
+- Creates powerful synthesis concepts that embody thesis-antithesis-synthesis
+- Requires careful timing and positioning
+
+### 4. Paradigm Shifts
+- Rare, system-wide events that temporarily transform all mechanics
+- Triggered after specific milestones or extended play
+- Completely changes the rules and relationships between concepts
+- Strategic adaptation required to maximize benefits
+
+## Game Flow
+
+### Beginning Experience
+1. Player enters the experience and is presented with 8 basic philosophical concepts
+2. Tutorial guidance subtly introduces clicking and dragging mechanics
+3. First energy is harvested, introducing the concept of activation
+4. Shop becomes available after reaching 25 energy
+5. First achievement unlocked to introduce the achievement system
+
+### Mid-Game Flow
+1. Player discovers resonance chains and begins optimizing combinations
+2. Shop upgrades enhance core mechanics, making energy generation more efficient
+3. First fusions create new concepts with unique properties
+4. Achievement progress provides secondary goals and rewards
+5. Multiple systems interact to create emergent gameplay
+
+### Advanced Gameplay
+1. Player has discovered multiple concept combinations and understands resonances
+2. Strategic decisions about upgrade paths and concept development
+3. Advanced mechanics like Metaphysical Fields become available
+4. Philosophical Schools offer specialization choices
+5. Mastery challenges provide high-difficulty optional content
 
 ## Visual Design
-- **Color Palette**: Vibrant, contrasting colors that pair well together
-- **Motion Design**: Smooth, fluid animations with physics-based movement and organic easing functions
-- **Particle Effects**: Dynamic, procedurally-generated particle systems for word activation effects
-- **Minimalist UI**: Focus on the interaction rather than interface elements. Splash screen for entry
-- **Construction Interface**: Steampunk-inspired mechanical assembly system for word creation
 
-## Audio Design (Future)
-- Ambient background soundscape that evolves with gameplay
-- Unique sound for each word effect activation
-- Sound cues for collisions (pitch/volume based on impact force)
-- Interactive audio that responds to user actions (e.g., dragging speed)
-- Generative audio system tied to visual elements
-- Progression jingles and achievement fanfares
+### Aesthetic
+- Clean, minimalist interface with focus on the spheres themselves
+- Rich gradient colors representing philosophical concepts
+- Particle effects that visualize abstract ideas
+- Subtle UI that doesn't distract from the core experience
 
-## Expansion Roadmap
+### Feedback Systems
+- Dopamine-triggering visual and audio cues for activations
+- Clear indicators for energy gain, resonance chains, and achievements
+- Subtle pulses and glows to hint at potential interactions
+- Physics-based movement that feels satisfying and responsive
+
+## Audio Design (Future Enhancement)
+
+### Sound Palette
+- Ambient, meditative background that evolves with gameplay
+- Harmonic tones for activation and resonance
+- Physical impact sounds for collisions
+- Achievement fanfares and milestone celebrations
+
+## Implementation Roadmap
 
 ### Phase 1: Core Experience (Complete)
-- Basic word properties (color, size, text, mass)
-- Splash screen entry
-- Physics-based floating and boundary collision
-- Click/Tap activation of individual word effects
-- Drag and Throw interaction
-- Trail generation during drag
-- Basic Word-Word Collision (Detection and Response)
+- Basic philosophical concepts with physical properties
+- Energy harvesting and shop system
+- Resonance chains and achievement tracking
+- Fusion system for concept creation
 
-### Phase 2: Progression Systems (Next)
-- Energy harvesting from word activation
-- Basic upgrade system for words and environment
-- Word property matrix implementation
-- Resonance chain system
-- Simple fusion mechanics
+### Phase 2: Depth Enhancement (Current)
+- Expanded fusion outcomes and philosophical connections
+- Enhanced visual and feedback systems
+- Tutorial improvements and player guidance
+- Balancing and pacing refinements
 
-### Phase 3: Enhanced Mechanics
-- Bullet pattern systems
-- World events and challenges
-- Advanced word construction system
-- Mechanical assembly interface
-- Meta-progression between sessions
+### Phase 3: Advanced Systems
+- Metaphysical Fields implementation
+- Philosophical Schools specialization
+- Dialectical Synthesis advanced mechanics
+- Expanded achievement system and goals
 
-### Phase 4: Advanced Features
-- Multiplayer cooperative lexical construction
-- Competitive word battles
-- Community word sharing
-- Advanced procedural generation
-- Narrative elements and lore discovery
+### Phase 4: Mastery Content
+- Paradigm Shift events
+- Philosophical Codex documentation system
+- Challenge modes and mastery missions
+- Community features for sharing discoveries
 
-## Balance Philosophy
-- **Skill vs. Luck**: 60/40 balance favoring skill expression
-- **Short vs. Long-term**: Balance immediate rewards with long-term investment
-- **Active vs. Passive**: Reward active play while allowing some idle progression
-- **Complexity vs. Accessibility**: Layer complexity gradually, maintain core simplicity
-- **Chaos vs. Control**: Allow for both strategic planning and opportunistic reactions
+## Success Metrics
 
-## Player Progression Curve
-1. **Discovery**: Learning basic interactions and word properties
-2. **Collection**: Gathering initial set of words and energy
-3. **Optimization**: Learning to create and maximize resonance chains
-4. **Experimentation**: Trying different word combinations and constructions
-5. **Mastery**: Creating optimal lexical systems and maximizing energy flow
+### Engagement Indicators
+- Time spent in active play
+- Number of concept activations
+- Upgrade purchases and strategic decisions
+- Fusion attempts and discoveries
+
+### Satisfaction Markers
+- Achievement completion rate
+- Progression through advanced mechanics
+- Return sessions and retention
+- Energy efficiency optimization
+
+## Design Philosophy
+Esoteric Sphere aims to create a satisfying balance between:
+- **Contemplation and Action**: Meditative exploration with strategic decision-making
+- **Simplicity and Depth**: Easy to understand basics with emergent complexity
+- **Structure and Discovery**: Clear progression with room for experimentation
+- **Learning and Mastery**: Gradual introduction of concepts with high skill ceiling
 

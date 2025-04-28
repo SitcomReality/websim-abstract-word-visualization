@@ -68,12 +68,18 @@ export class ResonanceSystem {
                     startTime: Date.now()
                 };
                 this.activeChains.push(chain);
+                
+                // Show special effect for new chain
+                this.showChainStartEffect(chain);
             }
             
             // Add word to chain if not already in it
             if (!chain.words.includes(word)) {
                 chain.words.push(word);
                 chain.multiplier += 0.2; // Increase multiplier with each new word
+                
+                // Show connection effect between words
+                this.showConnectionEffect(this.lastActivatedWord, word, this.chainTypes[chainType].color);
             }
             
             this.lastActivatedWord = word;
@@ -91,12 +97,111 @@ export class ResonanceSystem {
         }
     }
     
+    canFormResonance(word) {
+        if (!this.lastActivatedWord || word === this.lastActivatedWord) return false;
+        
+        const chainKey1 = `${this.lastActivatedWord.id}_${word.id}`;
+        const chainKey2 = `${word.id}_${this.lastActivatedWord.id}`;
+        return !!(this.wordAffinities[chainKey1] || this.wordAffinities[chainKey2]);
+    }
+    
     startChainTimer() {
         this.activationTimeout = setTimeout(() => {
             this.lastActivatedWord = null;
             this.activeChains = [];
             this.updateResonanceDisplay();
         }, this.chainDecayTime);
+    }
+    
+    showChainStartEffect(chain) {
+        // Create a particle burst for new chain
+        const container = document.getElementById('game-screen');
+        if (!container) return;
+        
+        const particles = 15;
+        const color = this.chainTypes[chain.type].color;
+        
+        for (let i = 0; i < particles; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'resonance-particle';
+            
+            const size = 5 + Math.random() * 8;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.background = color;
+            particle.style.borderRadius = '50%';
+            particle.style.position = 'fixed';
+            particle.style.bottom = '20px';
+            particle.style.left = '20px';
+            particle.style.opacity = '0.8';
+            particle.style.zIndex = '110';
+            particle.style.pointerEvents = 'none';
+            
+            container.appendChild(particle);
+            
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 50 + Math.random() * 100;
+            
+            particle.animate([
+                { transform: 'translate(0, 0)', opacity: 0.8 },
+                { 
+                    transform: `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`, 
+                    opacity: 0 
+                }
+            ], {
+                duration: 1000 + Math.random() * 500,
+                easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)'
+            }).onfinish = () => {
+                if (container.contains(particle)) {
+                    container.removeChild(particle);
+                }
+            };
+        }
+    }
+    
+    showConnectionEffect(word1, word2, color) {
+        const container = document.getElementById('game-screen');
+        if (!container || !word1 || !word2) return;
+        
+        const x1 = word1.x + word1.radius;
+        const y1 = word1.y + word1.radius;
+        const x2 = word2.x + word2.radius;
+        const y2 = word2.y + word2.radius;
+        
+        // Create a connecting line
+        const connection = document.createElement('div');
+        connection.className = 'resonance-connection';
+        
+        // Calculate line properties
+        const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+        
+        // Position the line
+        connection.style.position = 'absolute';
+        connection.style.width = `${length}px`;
+        connection.style.height = '3px';
+        connection.style.background = color;
+        connection.style.left = `${x1}px`;
+        connection.style.top = `${y1}px`;
+        connection.style.transformOrigin = '0 50%';
+        connection.style.transform = `rotate(${angle}deg)`;
+        connection.style.opacity = '0.7';
+        connection.style.zIndex = '95';
+        connection.style.pointerEvents = 'none';
+        container.appendChild(connection);
+        
+        // Animate the connection
+        connection.animate([
+            { opacity: 0.7, height: '3px' },
+            { opacity: 0, height: '8px' }
+        ], {
+            duration: 1000,
+            easing: 'ease-out'
+        }).onfinish = () => {
+            if (container.contains(connection)) {
+                container.removeChild(connection);
+            }
+        };
     }
     
     updateResonanceDisplay() {

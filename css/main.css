@@ -78,3 +78,52 @@ body {
     color: #ff5722;
     text-shadow: 0 0 15px rgba(255, 87, 34, 0.7);
 }
+
+/* New effects for enhanced experience */
+.word.cooldown-flash {
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+    animation: flash-cooldown 0.3s;
+}
+
+@keyframes flash-cooldown {
+    0% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.6); }
+    100% { box-shadow: 0 0 10px rgba(255, 0, 0, 0.3); }
+}
+
+.resonance-particle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 110;
+}
+
+.resonance-connection {
+    position: absolute;
+    pointer-events: none;
+    z-index: 95;
+}
+
+.discovery-notification {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.discovery-icon {
+    font-size: 2em;
+}
+
+.discovery-content {
+    flex: 1;
+}
+
+.discovery-title {
+    font-size: 0.8em;
+    color: #ffd700;
+    margin-bottom: 5px;
+}
+
+.discovery-name {
+    font-weight: bold;
+    font-size: 1.2em;
+}

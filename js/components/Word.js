@@ -32,6 +32,9 @@ export class Word {
 
         this.isDragging = false;
         this.isBeingDestroyed = false;
+        this.lastActivationTime = 0;
+        this.activationCooldown = 1000; // 1 second cooldown between activations
+        this.activationCount = 0; // Track how many times this word has been activated
 
         this.init();
         this.interactionHandler = new WordInteractionHandler(this, this.container, this.engine);
@@ -148,6 +151,22 @@ export class Word {
         }
 
         this.updateElementPosition();
+        
+        // Visual indication of resonance compatibility with last activated word
+        this.updateResonanceVisuals();
+    }
+
+    updateResonanceVisuals() {
+        if (!this.engine.resonanceSystem || !this.element) return;
+        
+        // Check if this word can form a resonance with the last activated word
+        const hasResonance = this.engine.resonanceSystem.canFormResonance(this);
+        
+        if (hasResonance) {
+            this.element.classList.add('resonance-ready');
+        } else {
+            this.element.classList.remove('resonance-ready');
+        }
     }
 
     updateElementPosition() {
@@ -167,6 +186,17 @@ export class Word {
 
     activate() {
         if (this.element.classList.contains('active') || this.isDragging || this.isBeingDestroyed) return;
+        
+        // Check activation cooldown
+        const now = Date.now();
+        if (now - this.lastActivationTime < this.activationCooldown) {
+            // Visual feedback for cooldown
+            this.showCooldownFeedback();
+            return;
+        }
+        
+        this.lastActivationTime = now;
+        this.activationCount++;
 
         this.element.classList.add('active', 'dopamine-pop');
         
@@ -206,6 +236,9 @@ export class Word {
             
             // Add floating particles for extra visual feedback
             this.createFloatingRewardParticles(centerX, centerY, Math.ceil(energyGained));
+            
+            // Show tutorial hints based on activation count
+            this.showTutorialHints();
         } else {
             console.warn(`Word ${this.id}: Engine or addEnergy function not available for energy harvesting.`);
         }
@@ -215,6 +248,30 @@ export class Word {
                 this.element.classList.remove('active');
             }
         }, 1500);
+    }
+    
+    showCooldownFeedback() {
+        if (!this.element) return;
+        
+        // Brief visual feedback for cooldown
+        this.element.classList.add('cooldown-flash');
+        setTimeout(() => {
+            this.element.classList.remove('cooldown-flash');
+        }, 300);
+    }
+    
+    showTutorialHints() {
+        // Simple tutorial system based on word activation count
+        if (this.activationCount === 1 && this.engine.gameState.tutorialStep === 0) {
+            this.engine.showTutorialHint("Great! Click more spheres to collect energy.");
+            this.engine.gameState.tutorialStep = 1;
+        } else if (this.activationCount === 3 && this.engine.gameState.tutorialStep === 1) {
+            this.engine.showTutorialHint("Try activating words in sequence to create resonance chains!");
+            this.engine.gameState.tutorialStep = 2;
+        } else if (this.engine.currentEnergy >= 25 && this.engine.gameState.tutorialStep === 2) {
+            this.engine.showTutorialHint("You have enough energy to buy upgrades in the shop!");
+            this.engine.gameState.tutorialStep = 3;
+        }
     }
 
     createFloatingRewardParticles(x, y, amount) {
