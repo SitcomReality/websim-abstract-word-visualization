@@ -43,6 +43,14 @@ export function createSpecialEffect(id, x, y, color, count) {
             createPulse(x, y, color, 3);
             break;
         default:
-            createExplosion(x, y, '#ffffff', 10);
+            // For fusion words and other custom words
+            if (id.startsWith('fusion_')) {
+                // Random combination of effects for fusion words
+                const effects = [createExplosion, createSpiral, createWave, createPulse, createOrbit];
+                const randomEffect = effects[Math.floor(Math.random() * effects.length)];
+                randomEffect(x, y, color, particleCount);
+            } else {
+                createExplosion(x, y, '#ffffff', 10);
+            }
     }
 }

@@ -289,7 +289,87 @@ export class Word {
             
             // Show fusion message
             this.showFusionMessage(this.text, otherWord.text, fusionX, fusionY);
+            
+            // Random chance to generate a new word from fusion
+            if (Math.random() > 0.7) {
+                this.createFusionWord(otherWord, fusionX, fusionY, fusionColor);
+            }
         }
+    }
+    
+    createFusionWord(otherWord, x, y, color) {
+        if (!this.engine) return;
+        
+        // Generate fusion word properties
+        const fusionText = this.generateFusionName(this.text, otherWord.text);
+        const fusionSize = (this.size + otherWord.size) / 2 * (0.8 + Math.random() * 0.4);
+        const energyBonus = Math.ceil((this.energyPotential + otherWord.energyPotential) * 0.6);
+        
+        // Create fusion word data
+        const fusionData = {
+            id: 'fusion_' + Date.now(),
+            text: fusionText,
+            size: fusionSize,
+            colors: {
+                primary: color,
+                secondary: this.blendColors(this.colors.secondary, otherWord.colors.secondary)
+            },
+            energyPotential: energyBonus
+        };
+        
+        // Create and add the new word
+        const fusionWord = new Word(fusionData, this.container, this.engine);
+        fusionWord.x = x - fusionWord.radius;
+        fusionWord.y = y - fusionWord.radius;
+        fusionWord.updateElementPosition();
+        
+        // Add to engine word list
+        this.engine.gameState.words.push(fusionWord);
+        
+        // Award bonus energy for successful fusion
+        this.engine.addEnergy(10);
+    }
+    
+    generateFusionName(word1, word2) {
+        // Simple fusion name generation
+        const parts1 = word1.split(' ');
+        const parts2 = word2.split(' ');
+        
+        if (parts1.length > 1 && parts2.length > 1) {
+            return `${parts1[0]} ${parts2[1]}`;
+        } else if (parts1.length > 1) {
+            return `${parts1[0]} ${parts2[0]}`;
+        } else if (parts2.length > 1) {
+            return `${parts1[0]} ${parts2[1]}`;
+        } else {
+            // Combine parts of words
+            const prefix = parts1[0].substring(0, Math.ceil(parts1[0].length / 2));
+            const suffix = parts2[0].substring(Math.floor(parts2[0].length / 2));
+            return prefix + suffix;
+        }
+    }
+    
+    blendColors(color1, color2) {
+        // Convert hex to RGB, blend, convert back to hex
+        const parseColor = (hexColor) => {
+            const hex = hexColor.slice(1);
+            return {
+                r: parseInt(hex.slice(0, 2), 16),
+                g: parseInt(hex.slice(2, 4), 16),
+                b: parseInt(hex.slice(4, 6), 16)
+            };
+        };
+        
+        const c1 = parseColor(color1);
+        const c2 = parseColor(color2);
+        
+        const blend = {
+            r: Math.floor((c1.r + c2.r) / 2),
+            g: Math.floor((c1.g + c2.g) / 2),
+            b: Math.floor((c1.b + c2.b) / 2)
+        };
+        
+        return `#${blend.r.toString(16).padStart(2, '0')}${blend.g.toString(16).padStart(2, '0')}${blend.b.toString(16).padStart(2, '0')}`;
     }
     
     showFusionMessage(word1, word2, x, y) {
@@ -318,11 +398,6 @@ export class Word {
                 this.container.removeChild(message);
             }
         };
-    }
-    
-    blendColors(color1, color2) {
-        // Simple color blending
-        return color1;
     }
     
     applyImpulse(impulseX, impulseY) {

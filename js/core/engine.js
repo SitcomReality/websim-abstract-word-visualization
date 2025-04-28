@@ -60,7 +60,22 @@ export class Engine {
     addEnergy(amount) {
         this.currentEnergy += amount;
         this.updateEnergyDisplay();
-        // console.log(`Energy gained: ${amount}, Total: ${this.currentEnergy}`); // For debugging
+        
+        // Visual feedback for energy change
+        const energyCounter = this.energyDisplayElement;
+        if (energyCounter) {
+            if (amount > 0) {
+                energyCounter.classList.add('energy-increase');
+                energyCounter.dataset.amount = `+${amount}`;
+            } else if (amount < 0) {
+                energyCounter.classList.add('energy-decrease');
+                energyCounter.dataset.amount = amount;
+            }
+            
+            setTimeout(() => {
+                energyCounter.classList.remove('energy-increase', 'energy-decrease');
+            }, 500);
+        }
     }
 
     updateEnergyDisplay() {

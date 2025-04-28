@@ -54,4 +54,43 @@
     z-index: 100;
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
     user-select: none;
+    transition: transform 0.2s, color 0.2s;
+}
+
+#energy-counter.energy-increase {
+    color: #4caf50;
+    animation: pulse-up 0.5s;
+}
+
+#energy-counter.energy-decrease {
+    color: #f44336;
+    animation: pulse-down 0.5s;
+}
+
+#energy-counter.energy-increase::after,
+#energy-counter.energy-decrease::after {
+    content: attr(data-amount);
+    position: absolute;
+    right: -10px;
+    top: -10px;
+    font-size: 0.8em;
+    opacity: 1;
+    animation: float-away 1s forwards;
+}
+
+@keyframes pulse-up {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+@keyframes pulse-down {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+@keyframes float-away {
+    0% { transform: translate(0, 0); opacity: 1; }
+    100% { transform: translate(0, -20px); opacity: 0; }
 }
