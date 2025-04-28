@@ -1,33 +1,38 @@
 import { getRandomPosition } from 'utils/position.js';
 import { createTrail } from 'components/Trail.js';
 import { createSpecialEffect } from 'effects/effectManager.js';
+import { PHYSICS_CONFIG } from 'config/constants.js';
 
 export class Word {
     constructor(data, container) {
         this.id = data.id;
         this.text = data.text;
         this.size = data.size;
+        this.radius = this.size / 2;
         this.colors = data.colors;
         this.container = container;
         this.element = null;
-        this.isDragging = false;
-        this.offsetX = 0;
-        this.offsetY = 0;
-        
-        // Physics properties
+
         this.x = 0;
         this.y = 0;
-        this.vx = (Math.random() - 0.5) * 2; // Initial velocity
+        this.vx = (Math.random() - 0.5) * 2;
         this.vy = (Math.random() - 0.5) * 2;
-        this.damping = 0.98; // Damping factor for slowing down
-        this.pushForce = 0.05; // Gentle floating force magnitude
-        this.maxSpeed = 3; // Maximum speed for floating
-        this.mass = this.size * this.size; // Mass proportional to area
-        this.restitution = 0.8 + (Math.random() * 0.15); // Bounciness factor for collisions (slightly randomized)
-        
+        this.damping = PHYSICS_CONFIG.DAMPING;
+        this.pushForce = PHYSICS_CONFIG.PUSH_FORCE;
+        this.maxSpeed = PHYSICS_CONFIG.MAX_SPEED;
+        this.mass = Math.PI * this.radius * this.radius;
+        this.restitution = PHYSICS_CONFIG.RESTITUTION_RANGE[0] + Math.random() * (PHYSICS_CONFIG.RESTITUTION_RANGE[1] - PHYSICS_CONFIG.RESTITUTION_RANGE[0]);
+
+        this.isDragging = false;
+        this.dragOffsetX = 0;
+        this.dragOffsetY = 0;
+        this.lastMouseX = 0;
+        this.lastMouseY = 0;
+        this.dragMoved = false;
+
         this.init();
     }
-    
+
     init() {
         this.element = document.createElement('div');
         this.element.id = this.id;
@@ -37,121 +42,208 @@ export class Word {
         this.element.style.width = `${this.size}px`;
         this.element.style.height = `${this.size}px`;
         this.element.style.background = `radial-gradient(circle, ${this.colors.primary}, ${this.colors.secondary})`;
-        this.element.style.position = 'absolute'; // Ensure position is absolute for transform to work correctly
-        this.element.style.left = '0px'; // Set initial left/top to 0 for transform positioning
+        this.element.style.position = 'absolute';
+        this.element.style.left = '0px';
         this.element.style.top = '0px';
 
         this.container.appendChild(this.element);
 
-        // Get random position and set initial physics coordinates
+        // Use new getRandomPosition that biases towards center
         const initialPosition = getRandomPosition(this.element, this.container);
         this.x = initialPosition.x;
         this.y = initialPosition.y;
-
-        // Update element's visual position based on physics coordinates
         this.updateElementPosition();
 
         this.addEventListeners();
-        
-        // Start floating animation
         this.startFloatingAnimation();
     }
-    
+
     addEventListeners() {
-        // Click event
-        this.element.addEventListener('click', () => this.activate());
-        
-        // Drag events
-        this.element.addEventListener('mousedown', (e) => this.startDrag(e));
-        document.addEventListener('mousemove', (e) => this.drag(e));
-        document.addEventListener('mouseup', () => this.endDrag());
-    }
-    
-    startFloatingAnimation() {
-        setInterval(() => {
-            if (!this.element.classList.contains('active')) {
-                this.update();
+        this.element.addEventListener('click', (e) => {
+            if (!this.dragMoved) {
+                this.activate();
             }
-        }, 16);
+            this.dragMoved = false;
+        });
+
+        this.element.addEventListener('mousedown', (e) => this.startDrag(e));
+        window.addEventListener('mousemove', (e) => this.drag(e));
+        window.addEventListener('mouseup', (e) => this.endDrag(e));
+        this.element.addEventListener('touchstart', (e) => {
+            this.startDrag(e.touches[0]);
+        }, { passive: true });
+        window.addEventListener('touchmove', (e) => {
+            if (this.isDragging) {
+                e.preventDefault();
+                this.drag(e.touches[0]);
+            }
+        }, { passive: false });
+        window.addEventListener('touchend', (e) => this.endDrag(e.changedTouches[0]));
+        window.addEventListener('touchcancel', (e) => this.endDrag(e.changedTouches[0]));
     }
-    
+
     update(dt = 1) {
-        // Apply gentle random floating force with periodic pattern
-        const time = Date.now() * 0.001;
-        const floatX = Math.sin(time * 0.7 + this.id.charCodeAt(0)) * this.pushForce * dt;
-        const floatY = Math.cos(time * 0.5 + this.id.charCodeAt(0)) * this.pushForce * dt;
-        this.vx += floatX + (Math.random() - 0.5) * this.pushForce * 0.5 * dt;
-        this.vy += floatY + (Math.random() - 0.5) * this.pushForce * 0.5 * dt;
-        
-        // Limit speed
+        if (this.isDragging) return;
+
+        this.vx += (Math.random() - 0.5) * this.pushForce * dt;
+        this.vy += (Math.random() - 0.5) * this.pushForce * dt;
+
+        this.vx *= Math.pow(this.damping, dt);
+        this.vy *= Math.pow(this.damping, dt);
+
         const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
         if (speed > this.maxSpeed) {
-            this.vx = this.vx / speed * this.maxSpeed;
-            this.vy = this.vy / speed * this.maxSpeed;
+            this.vx = (this.vx / speed) * this.maxSpeed;
+            this.vy = (this.vy / speed) * this.maxSpeed;
         }
-        
-        // Apply damping
-        this.vx *= this.damping;
-        this.vy *= this.damping;
-        
-        // Update position
-        this.x += this.vx;
-        this.y += this.vy;
-        
-        // Update element position
+        if (speed < PHYSICS_CONFIG.MIN_SPEED) {
+            this.vx = 0;
+            this.vy = 0;
+        }
+
+        let nextX = this.x + this.vx * dt;
+        let nextY = this.y + this.vy * dt;
+
+        const containerRect = this.container.getBoundingClientRect();
+        const leftBoundary = 0;
+        const rightBoundary = containerRect.width - this.size;
+        const topBoundary = 0;
+        const bottomBoundary = containerRect.height - this.size;
+
+        if (nextX < leftBoundary) {
+            this.x = leftBoundary;
+            this.vx *= -this.restitution;
+        } else if (nextX > rightBoundary) {
+            this.x = rightBoundary;
+            this.vx *= -this.restitution;
+        } else {
+            this.x = nextX;
+        }
+
+        if (nextY < topBoundary) {
+            this.y = topBoundary;
+            this.vy *= -this.restitution;
+        } else if (nextY > bottomBoundary) {
+            this.y = bottomBoundary;
+            this.vy *= -this.restitution;
+        } else {
+            this.y = nextY;
+        }
+
         this.updateElementPosition();
     }
-    
+
     updateElementPosition() {
-        // Use translate for positioning, ensuring left/top are 0 in CSS or style init
         this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
     }
 
     activate() {
-        // Remove active class from all words
-        document.querySelectorAll('.word').forEach(word => word.classList.remove('active'));
-        
-        // Add active class to this word
+        if (this.element.classList.contains('active') || this.isDragging) return;
+
         this.element.classList.add('active');
-        
-        // Create special effect
-        const rect = this.element.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
+
+        const centerX = this.x + this.radius;
+        const centerY = this.y + this.radius;
         createSpecialEffect(this.id, centerX, centerY, this.colors.primary);
-        
-        // Reset after animation duration
+
         setTimeout(() => {
-            this.element.classList.remove('active');
-        }, 3000);
+            if (this.element && this.element.classList.contains('active')) {
+                this.element.classList.remove('active');
+            }
+        }, 1500);
     }
-    
+
     startDrag(e) {
+        if (e.button && e.button !== 0) return;
+
         this.isDragging = true;
-        this.offsetX = e.clientX - this.element.getBoundingClientRect().left;
-        this.offsetY = e.clientY - this.element.getBoundingClientRect().top;
+        this.dragMoved = false;
+
+        this.element.classList.add('dragging');
         this.element.style.transition = 'none';
+
+        const clientX = e.clientX;
+        const clientY = e.clientY;
+        this.dragOffsetX = clientX - (this.x + this.radius);
+        this.dragOffsetY = clientY - (this.y + this.radius);
+        this.vx = 0;
+        this.vy = 0;
+        this.lastMouseX = clientX;
+        this.lastMouseY = clientY;
+
+        this.element.style.zIndex = 100;
     }
-    
+
     drag(e) {
         if (!this.isDragging) return;
 
-        const x = e.clientX - this.offsetX;
-        const y = e.clientY - this.offsetY;
-        this.element.style.transform = `translate(${x}px, ${y}px)`;
-        
-        // Update physics position
-        this.x = x;
-        this.y = y;
-        
-        // Create trail with color from this word (use current physics center for trail position)
-        createTrail(this.x + this.size / 2, this.y + this.size / 2, this.element, this.container, this.colors.primary);
+        const currentMouseX = e.clientX;
+        const currentMouseY = e.clientY;
+
+        const dx = currentMouseX - this.lastMouseX;
+        const dy = currentMouseY - this.lastMouseY;
+        if (!this.dragMoved && Math.sqrt(dx * dx + dy * dy) > 3) {
+            this.dragMoved = true;
+        }
+
+        let newCenterX = currentMouseX - this.dragOffsetX;
+        let newCenterY = currentMouseY - this.dragOffsetY;
+
+        this.vx = dx * PHYSICS_CONFIG.DRAG_THROW_FACTOR;
+        this.vy = dy * PHYSICS_CONFIG.DRAG_THROW_FACTOR;
+
+        this.x = newCenterX - this.radius;
+        this.y = newCenterY - this.radius;
+
+        const containerRect = this.container.getBoundingClientRect();
+        const leftBoundary = 0;
+        const rightBoundary = containerRect.width - this.size;
+        const topBoundary = 0;
+        const bottomBoundary = containerRect.height - this.size;
+
+        this.x = Math.max(leftBoundary, Math.min(this.x, rightBoundary));
+        this.y = Math.max(topBoundary, Math.min(this.y, bottomBoundary));
+
+        this.updateElementPosition();
+
+        this.lastMouseX = currentMouseX;
+        this.lastMouseY = currentMouseY;
+
+        createTrail(this.x + this.radius, this.y + this.radius, this.element, this.container);
     }
-    
-    endDrag() {
+
+    endDrag(e) {
         if (this.isDragging) {
             this.isDragging = false;
-            this.element.style.transition = 'transform 0.3s ease-out, opacity 0.3s';
+            this.element.classList.remove('dragging');
+            this.element.style.zIndex = '';
+
+            if (!this.dragMoved) {
+                this.vx = 0;
+                this.vy = 0;
+                this.activate();
+            } else {
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                const maxThrowSpeed = this.maxSpeed * 3;
+                if (speed > maxThrowSpeed) {
+                    this.vx = (this.vx / speed) * maxThrowSpeed;
+                    this.vy = (this.vy / speed) * maxThrowSpeed;
+                }
+            }
+        }
+        this.dragMoved = false;
+    }
+
+    startFloatingAnimation() {
+        setInterval(() => {
+            this.update(16 / 1000);
+        }, 16);
+    }
+
+    applyImpulse(impulseX, impulseY) {
+        if (this.mass > 0.01) {
+            this.vx += impulseX / this.mass;
+            this.vy += impulseY / this.mass;
         }
     }
 }
