@@ -14,6 +14,17 @@ export class Word {
         this.offsetX = 0;
         this.offsetY = 0;
         
+        // Physics properties
+        this.x = 0;
+        this.y = 0;
+        this.vx = (Math.random() - 0.5) * 2; // Initial velocity
+        this.vy = (Math.random() - 0.5) * 2;
+        this.damping = 0.98; // Damping factor for slowing down
+        this.pushForce = 0.05; // Gentle floating force magnitude
+        this.maxSpeed = 3; // Maximum speed for floating
+        this.mass = this.size * this.size; // Mass proportional to area
+        this.restitution = 0.8 + (Math.random() * 0.15); // Bounciness factor for collisions (slightly randomized)
+        
         this.init();
     }
     
@@ -55,11 +66,37 @@ export class Word {
     startFloatingAnimation() {
         setInterval(() => {
             if (!this.element.classList.contains('active')) {
-                this.element.style.transform = `translate(${Math.sin(Date.now() * 0.001 + parseInt(this.id.charCodeAt(0))) * 10}px, 
-                                             ${Math.cos(Date.now() * 0.001 + parseInt(this.id.charCodeAt(0))) * 10}px) 
-                                             rotate(${Math.sin(Date.now() * 0.0005) * 5}deg)`;
+                this.update();
             }
-        }, 50);
+        }, 16);
+    }
+    
+    update(dt = 1) {
+        // Apply gentle random floating force with periodic pattern
+        const time = Date.now() * 0.001;
+        const floatX = Math.sin(time * 0.7 + this.id.charCodeAt(0)) * this.pushForce * dt;
+        const floatY = Math.cos(time * 0.5 + this.id.charCodeAt(0)) * this.pushForce * dt;
+        this.vx += floatX + (Math.random() - 0.5) * this.pushForce * 0.5 * dt;
+        this.vy += floatY + (Math.random() - 0.5) * this.pushForce * 0.5 * dt;
+        
+        // Limit speed
+        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+        if (speed > this.maxSpeed) {
+            this.vx = this.vx / speed * this.maxSpeed;
+            this.vy = this.vy / speed * this.maxSpeed;
+        }
+        
+        // Apply damping
+        this.vx *= this.damping;
+        this.vy *= this.damping;
+        
+        // Update position
+        this.x += this.vx;
+        this.y += this.vy;
+        
+        // Update element position
+        this.element.style.left = `${this.x}px`;
+        this.element.style.top = `${this.y}px`;
     }
     
     activate() {
@@ -89,15 +126,19 @@ export class Word {
     }
     
     drag(e) {
-        if (this.isDragging) {
-            const x = e.clientX - this.offsetX;
-            const y = e.clientY - this.offsetY;
-            this.element.style.left = `${x}px`;
-            this.element.style.top = `${y}px`;
-            
-            // Create trail
-            createTrail(e.clientX, e.clientY, this.element, this.container);
-        }
+        if (!this.isDragging) return;
+
+        const x = e.clientX - this.offsetX;
+        const y = e.clientY - this.offsetY;
+        this.element.style.left = `${x}px`;
+        this.element.style.top = `${y}px`;
+        
+        // Update physics position
+        this.x = x;
+        this.y = y;
+        
+        // Create trail with color from this word (use current physics center for trail position)
+        createTrail(this.x + this.size / 2, this.y + this.size / 2, this.element, this.container, this.colors.primary);
     }
     
     endDrag() {

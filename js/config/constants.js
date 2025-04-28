@@ -67,4 +67,13 @@ export const EFFECT_SETTINGS = {
 };
 
 export const ANIMATION_DURATION = 3000;
-export const TRAIL_DURATION = 1000;
+export const TRAIL_DURATION = 800; 
+export const PHYSICS_CONFIG = {
+    DAMPING: 0.98,
+    MIN_SPEED: 0.01,
+    MAX_SPEED: 4,
+    PUSH_FORCE: 0.1,
+    RESTITUTION_RANGE: [0.75, 0.9],
+    DRAG_THROW_FACTOR: 0.8,
+    COLLISION_COOLDOWN: 50  
+};

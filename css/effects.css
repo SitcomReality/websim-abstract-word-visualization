@@ -2,14 +2,12 @@
     position: absolute;
     border-radius: 50%;
     pointer-events: none;
-    animation: fadeOut 1s forwards;
+    animation: fadeTrail 1s forwards;
 }
 
-@keyframes fadeOut {
-    to {
-        opacity: 0;
-        transform: scale(0.3);
-    }
+@keyframes fadeTrail {
+    0% { opacity: 0.7; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.3); }
 }
 
 .particle {
@@ -23,3 +21,9 @@
     pointer-events: none;
 }
 
+.collision-particle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 50;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
