@@ -1,5 +1,6 @@
 import { createSpecialEffect } from 'effects/effectManager.js';
-import { Word } from 'components/Word.js'; // Import Word if needed, maybe not if using wordManager
+import { Word } from 'components/Word.js';
+import { WORDS_DATA } from 'config/constants.js'; // Need this for finding Meso template
 
 export class FusionSystem {
     constructor(engine) {
@@ -12,14 +13,35 @@ export class FusionSystem {
         // --- Fusion Parameters ---
         const baseAffinity = 0.4; // Base chance of success
         const affinityRoll = Math.random() * (this.engine.fusionSuccessRateModifier || 1); // Roll based on upgrades
-        const energyCost = 15; // Energy required to attempt fusion
+        const energyCost = this.engine.gameState.holistVisionActive ? 0 : 15; // No cost with Holist Vision
         const fusionThreshold = 1 - baseAffinity; // Required roll value for success
 
         console.log(`Attempting fusion: ${word1.id} + ${word2.id}. Roll ${affinityRoll.toFixed(2)} vs Threshold ${fusionThreshold.toFixed(2)}, Cost ${energyCost}, Energy ${this.engine.currentEnergy}`);
 
+        // Check for Holist Vision automatic Micro merge first
+        if (this.engine.gameState.holistVisionActive && word1.ontologicalCategory === 'Micro' && word2.ontologicalCategory === 'Micro') {
+             console.log("Holist Vision: Auto-merging Micro spheres.");
+             this.performSuccessfulFusion(word1, word2, 0, true); // Force creation, cost 0
+             return; // Stop further processing for this auto-merge
+        }
+
+        // Normal fusion attempt
         if (affinityRoll > fusionThreshold && this.engine.currentEnergy >= energyCost) {
-            // --- Successful Fusion ---
-            this.engine.addEnergy(-energyCost); // Deduct energy cost
+            this.performSuccessfulFusion(word1, word2, energyCost, false); // Normal fusion, potential energy gain
+        } else {
+            console.log("Fusion failed (low affinity or insufficient energy).");
+            this.showFusionMessage(word1.text, word2.text, word1.x + word1.radius, word1.y + word1.radius, false); // Show failure message
+            // Push words apart on failure
+            const pushForce = 5;
+            const angle = Math.atan2(word1.y - word2.y, word1.x - word2.x);
+            word1.applyImpulse(Math.cos(angle) * pushForce, Math.sin(angle) * pushForce);
+            word2.applyImpulse(-Math.cos(angle) * pushForce, -Math.sin(angle) * pushForce);
+        }
+    }
+
+    performSuccessfulFusion(word1, word2, energyCost, forceCreateNewWord) {
+         // --- Successful Fusion ---
+            this.engine.addEnergy(-energyCost); // Deduct energy cost (might be 0)
 
             // Unlock first fusion achievement
             if (this.engine.achievementSystem) {
@@ -34,12 +56,12 @@ export class FusionSystem {
             const fusionColor = this.blendColors(word1.colors.primary, word2.colors.primary);
             createSpecialEffect('fusion', fusionX, fusionY, fusionColor, 30);
 
-            // Display fusion text message
-            this.showFusionMessage(word1.text, word2.text, fusionX, fusionY);
+            // Display fusion text message (success)
+            this.showFusionMessage(word1.text, word2.text, fusionX, fusionY, true);
 
             // --- Fusion Outcome ---
             const createNewWordChance = 0.6; // Chance to create a new word vs. just getting energy
-            if (Math.random() < createNewWordChance) {
+            if (forceCreateNewWord || Math.random() < createNewWordChance) {
                 console.log("Fusion successful: Creating new word.");
                 this.createFusionWord(word1, word2, fusionX, fusionY, fusionColor);
                 // Destroy original words AFTER potentially creating the new one
@@ -47,20 +69,14 @@ export class FusionSystem {
                 word2.destroy();
             } else {
                 console.log("Fusion successful: Granting bonus energy.");
-                this.engine.addEnergy(35); // Increased bonus energy
+                const bonusEnergy = 35; // Energy bonus for success without new word
+                this.engine.addEnergy(bonusEnergy);
                 // Push words apart gently after successful energy bonus
                 const pushForce = 3; // Reduced push force compared to failure
                 const angle = Math.atan2(word1.y - word2.y, word1.x - word2.x);
                 word1.applyImpulse(Math.cos(angle) * pushForce, Math.sin(angle) * pushForce);
                 word2.applyImpulse(-Math.cos(angle) * pushForce, -Math.sin(angle) * pushForce);
             }
-        } else {
-            console.log("Fusion failed (low affinity or insufficient energy).");
-            const pushForce = 5;
-            const angle = Math.atan2(word1.y - word2.y, word1.x - word2.x);
-            word1.applyImpulse(Math.cos(angle) * pushForce, Math.sin(angle) * pushForce);
-            word2.applyImpulse(-Math.cos(angle) * pushForce, -Math.sin(angle) * pushForce);
-        }
     }
 
     createFusionWord(word1, word2, x, y, color) {
@@ -186,9 +202,13 @@ export class FusionSystem {
         }
     }
 
-    showFusionMessage(word1, word2, x, y) {
+    showFusionMessage(word1, word2, x, y, success) {
         const message = document.createElement('div');
-        message.innerText = `${word1.split(' ')[0]} + ${word2.split(' ')[0]}`; // Display the primary parts of the words
+        if (success) {
+            message.innerText = `${word1.split(' ')[0]} + ${word2.split(' ')[0]}: Fusion successful!`; // Display the primary parts of the words
+        } else {
+            message.innerText = `${word1.split(' ')[0]} + ${word2.split(' ')[0]}: Fusion failed.`; // Display the primary parts of the words
+        }
 
         message.style.position = 'absolute';
         message.style.left = `${x}px`;

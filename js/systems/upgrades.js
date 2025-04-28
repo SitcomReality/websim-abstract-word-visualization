@@ -1,5 +1,6 @@
 import { PHYSICS_CONFIG } from 'config/constants.js';
 import { COLORS } from 'config/constants.js'; // Import COLORS
+import { Word } from 'components/Word.js'; // Needed for Reductionist Toolkit
 
 export class UpgradeSystem {
     constructor(engine) {
@@ -67,7 +68,7 @@ export class UpgradeSystem {
                 engine.gameState.words.forEach(word => {
                     // Recalculate restitution based on new potential range
                     // Restore base first if it exists
-                    const originalBase = word.behavior?.baseRestitution || baseRestitution;
+                    const originalBase = word.physics?.baseRestitution || baseRestitution; // Access via physics component
                     const randomFactor = Math.random() * (maxRestitution - originalBase);
                     word.restitution = Math.min(maxRestitution, originalBase + randomFactor);
                 });
@@ -108,7 +109,7 @@ export class UpgradeSystem {
         {
             id: 'chromatic_blindness_red',
             name: 'Chromatic Blindness (Red)',
-            description: 'Cannot interact with Red/Orange (Rationalism) spheres. Other spheres generate 2x energy.',
+            description: 'Cannot interact with Red/Orange (Rationalism) spheres. Other spheres generate 4x energy.',
             cost: 150,
             maxLevel: 1, // One-time purchase
             applyEffect: (engine, level) => {
@@ -117,14 +118,14 @@ export class UpgradeSystem {
                     engine.gameState.chromaticBlindnessColor = 'Rationalism'; // Store the affected school name
                     // Re-evaluate visibility of all words
                     engine.gameState.words.forEach(word => word.updateVisibility());
-                    // Note: The 2x energy effect needs to be applied in WordBehavior.activate
+                    // Note: The 4x energy effect is applied in WordActivation.calculateMultipliers
                 }
             }
         },
          {
             id: 'chromatic_blindness_blue',
             name: 'Chromatic Blindness (Blue)',
-            description: 'Cannot interact with Blue/Green (Empiricism) spheres. Other spheres generate 2x energy.',
+            description: 'Cannot interact with Blue/Green (Empiricism) spheres. Other spheres generate 4x energy.',
             cost: 150,
             maxLevel: 1,
             applyEffect: (engine, level) => {
@@ -145,7 +146,7 @@ export class UpgradeSystem {
                  if (level === 1) {
                     console.log("Applying Quantum Uncertainty");
                     engine.gameState.quantumUncertaintyActive = true;
-                    // Logic applied in WordBehavior.updatePhysics
+                    // Logic applied in WordPhysics.updatePhysics
                 }
             }
         },
@@ -159,7 +160,7 @@ export class UpgradeSystem {
                 if (level === 1) {
                     console.log("Applying Skeptical Method");
                     engine.gameState.skepticalMethodActive = true;
-                    // Logic applied in WordBehavior.activate
+                    // Logic applied in WordActivation.activate
                 }
             }
         },
@@ -181,7 +182,6 @@ export class UpgradeSystem {
                 }
             }
         },
-        // Add new upgrades from GDD
         {
             id: 'eternalism',
             name: 'Eternalism',
@@ -192,14 +192,14 @@ export class UpgradeSystem {
                 if (level === 1) {
                     console.log("Applying Eternalism");
                     engine.gameState.eternalismActive = true;
-                    // Effect is applied in WordBehavior.activate
+                    // Effect is applied in WordActivation.activate
                 }
             }
         },
         {
             id: 'categorical_imperative',
             name: 'Categorical Imperative',
-            description: 'You must activate spheres in strict size order (small→medium→large), but completing a sequence grants massive energy bonuses.',
+            description: 'Must activate spheres in strict size order (Micro→Meso→Macro). Completed sequences grant massive (3x) energy bonuses.',
             cost: 175,
             maxLevel: 1,
             applyEffect: (engine, level) => {
@@ -207,18 +207,20 @@ export class UpgradeSystem {
                     console.log("Applying Categorical Imperative");
                     engine.gameState.categoricalImperativeActive = true;
                     engine.gameState.categoricalSequence = {
-                        current: null, // Current category in sequence
-                        lastWord: null, // Last activated word
+                        current: null, // Current category in sequence - DEPRECATED
+                        lastWord: null, // Last activated word - DEPRECATED
                         stepsComplete: 0, // Steps completed in sequence
-                        categories: ['Micro', 'Meso', 'Macro'] // Order of categories
+                        categories: ['Micro', 'Meso', 'Macro'], // Order of categories
+                        justCompleted: false // Flag for bonus energy
                     };
+                    // Logic applied in WordActivation.activate
                 }
             }
         },
         {
             id: 'nihilistic_void',
             name: 'Nihilistic Void',
-            description: 'Random spheres periodically disappear from existence, but each disappearance releases energy to nearby concepts.',
+            description: 'Random spheres periodically disappear from existence, but each disappearance releases energy (2x potential) to nearby concepts.',
             cost: 160,
             maxLevel: 1,
             applyEffect: (engine, level) => {
@@ -227,6 +229,36 @@ export class UpgradeSystem {
                     engine.gameState.nihilisticVoidActive = true;
                     // Start the disappearance timer
                     engine.startNihilisticVoidTimer();
+                    // Logic in Engine.triggerNihilisticVoid
+                }
+            }
+        },
+        {
+            id: 'holist_vision',
+            name: 'Holist Vision',
+            description: 'Micro spheres automatically merge into Meso spheres. Individual Micro activation impossible. Fusion costs no energy.',
+            cost: 140,
+            maxLevel: 1,
+            applyEffect: (engine, level) => {
+                if (level === 1) {
+                    console.log("Applying Holist Vision");
+                    engine.gameState.holistVisionActive = true;
+                    // Logic applied in Engine.updateGame and FusionSystem.attemptFusion
+                }
+            }
+        },
+        {
+            id: 'reductionist_toolkit',
+            name: 'Reductionist Toolkit',
+            description: 'Macro spheres cannot be activated directly. Double-click any sphere to break it into 3 smaller components.',
+            cost: 140,
+            maxLevel: 1,
+            applyEffect: (engine, level) => {
+                if (level === 1) {
+                    console.log("Applying Reductionist Toolkit");
+                    engine.gameState.reductionistToolkitActive = true;
+                    // Logic applied in WordActivation.activate and WordInteractionHandler
+                    engine.gameState.words.forEach(word => word.addDoubleClickListener()); // Add listener needed
                 }
             }
         },
@@ -266,8 +298,8 @@ export class UpgradeSystem {
                  word.baseEnergyPotential = word.energyPotential;
              }
              // Store base restitution if needed by upgrades
-             if (word.behavior && word.behavior.baseRestitution === undefined) {
-                 word.behavior.baseRestitution = word.restitution;
+             if (word.physics && word.physics.baseRestitution === undefined) { // Check physics component
+                 word.physics.baseRestitution = word.restitution;
              }
          });
          // Store base resonance multipliers if needed
@@ -301,6 +333,19 @@ export class UpgradeSystem {
          this.engine.gameState.categoricalImperativeActive = false;
          this.engine.gameState.nihilisticVoidActive = false;
          this.engine.gameState.categoricalSequence = null;
+         this.engine.gameState.holistVisionActive = false;
+         this.engine.gameState.reductionistToolkitActive = false;
+
+         // Stop timers related to upgrades
+         this.engine.stopNihilisticVoidTimer();
+
+         // Remove listeners added by upgrades
+          this.engine.gameState.words.forEach(word => {
+              if (word.removeDoubleClickListener) {
+                 word.removeDoubleClickListener();
+             }
+          });
+
 
          // Reset multipliers or effects applied by upgrades
          this.engine.physics.collisionEnergyMultiplier = 1.0;
@@ -324,8 +369,8 @@ export class UpgradeSystem {
              if (word.baseEnergyPotential !== undefined) {
                  word.energyPotential = word.baseEnergyPotential;
              }
-             if (word.behavior?.baseRestitution !== undefined) {
-                word.restitution = word.behavior.baseRestitution;
+             if (word.physics?.baseRestitution !== undefined) { // Check physics component
+                word.restitution = word.physics.baseRestitution;
              }
              word.updateVisibility(); // Ensure visibility is reset
          });
