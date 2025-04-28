@@ -1,6 +1,12 @@
 import { initSplashScreen } from 'screens/splash.js';
 import { initGameScreen } from 'screens/game.js';
 import { PHYSICS_CONFIG } from 'config/constants.js';
+import { ScreenManager } from 'core/screenManager.js';
+import { Physics } from 'core/physics.js';
+import { ShopSystem } from 'systems/shop.js';
+import { EnergyManager } from 'systems/energy.js';
+import { WordManager } from 'systems/wordManager.js';
+import { UpgradeSystem } from 'systems/upgrades.js';
 
 export class Engine {
     constructor() {
@@ -11,566 +17,76 @@ export class Engine {
         };
         this.lastTimestamp = 0;
         this.container = null;
-        this.currentEnergy = 0;
-        this.energyDisplayElement = null;
-        this.shopItems = [];
 
+        // Initialize Managers and Systems
+        this.screenManager = new ScreenManager(this);
+        this.physics = new Physics(this);
+        this.energyManager = new EnergyManager(this, 0, null); // Initial energy 0, display element set later
+        this.shopSystem = new ShopSystem(this);
+        this.wordManager = new WordManager(this);
+        this.upgradeSystem = new UpgradeSystem(this);
+
+        // Collision sound related properties - moved potentially to an AudioManager later
         this.collisionSounds = {
             light: new Audio(),
             medium: new Audio(),
             heavy: new Audio()
         };
         this.lastCollisionTime = 0;
-        this.collisionCooldown = PHYSICS_CONFIG.COLLISION_COOLDOWN;
+        this.collisionCooldown = PHYSICS_CONFIG.COLLISION_COOLDOWN; // Maybe move to Physics?
     }
 
     init() {
-        initSplashScreen(this.switchToGameScreen.bind(this));
-        this.initShopSystem();
-    }
-
-    switchToGameScreen() {
-        const splashScreen = document.getElementById('splash-screen');
-        const gameScreen = document.getElementById('game-screen');
-        const shopScreen = document.getElementById('shop-screen');
-
-        if (splashScreen) splashScreen.classList.remove('active');
-        if (shopScreen) shopScreen.classList.remove('active');
-        if (gameScreen) {
-            gameScreen.classList.add('active');
-            this.container = gameScreen.querySelector('.container');
-            this.energyDisplayElement = document.getElementById('energy-counter');
-            this.updateEnergyDisplay(); // Initialize display
-
-            // Setup shop button
-            const shopButton = document.getElementById('shop-button');
-            if (shopButton) {
-                shopButton.addEventListener('click', () => this.openShop());
-            }
-
-            if (this.container) {
-                // Pass the engine instance to initGameScreen
-                const gameComponents = initGameScreen(this);
-                this.gameState.words = gameComponents.words;
-
-                this.resolveInitialOverlaps();
-
-                this.gameState.currentScreen = 'game';
-                this.gameState.active = true;
-                this.lastTimestamp = performance.now();
-                this.startGameLoop();
-            } else {
-                console.error("Game container not found after switching screen!");
-            }
-        } else {
-            console.error("Game screen element not found!");
-        }
-    }
-
-    initShopSystem() {
-        // Initialize shop items
-        this.shopItems = [
-            {
-                id: 'word_multiplier',
-                name: 'Word Multiplier',
-                description: 'Increases energy generated from words by 25%',
-                cost: 50,
-                maxLevel: 5,
-                currentLevel: 0,
-                effect: level => ({ energyMultiplier: 1 + (level * 0.25) })
-            },
-            {
-                id: 'new_word',
-                name: 'New Word',
-                description: 'Adds a new random word to your collection',
-                cost: 100,
-                maxLevel: 10,
-                currentLevel: 0,
-                effect: level => ({ newWordCount: level })
-            },
-            {
-                id: 'faster_regen',
-                name: 'Energy Accelerator',
-                description: 'Words regenerate energy 20% faster',
-                cost: 75,
-                maxLevel: 3,
-                currentLevel: 0,
-                effect: level => ({ regenSpeed: 1 + (level * 0.2) })
-            },
-            {
-                id: 'word_size',
-                name: 'Word Enlarger',
-                description: 'Increases the size and impact of your words',
-                cost: 120,
-                maxLevel: 3,
-                currentLevel: 0,
-                effect: level => ({ sizeMultiplier: 1 + (level * 0.15) })
-            }
-        ];
-
-        // Setup close shop button
-        const closeShopButton = document.getElementById('close-shop');
-        if (closeShopButton) {
-            closeShopButton.addEventListener('click', () => this.closeShop());
-        }
-    }
-
-    openShop() {
-        const gameScreen = document.getElementById('game-screen');
-        const shopScreen = document.getElementById('shop-screen');
-        
-        if (gameScreen && shopScreen) {
-            // Pause game physics while shop is open
-            this.gameState.active = false;
-            
-            gameScreen.classList.remove('active');
-            shopScreen.classList.add('active');
-            
-            // Populate shop items
-            this.renderShopItems();
-        }
-    }
-    
-    closeShop() {
-        const shopScreen = document.getElementById('shop-screen');
-        const gameScreen = document.getElementById('game-screen');
-        
-        if (shopScreen && gameScreen) {
-            shopScreen.classList.remove('active');
-            gameScreen.classList.add('active');
-            
-            // Resume game physics
-            this.gameState.active = true;
-            this.lastTimestamp = performance.now();
-            this.startGameLoop();
-        }
-    }
-    
-    renderShopItems() {
-        const shopItemsContainer = document.querySelector('.shop-items');
-        if (!shopItemsContainer) return;
-        
-        shopItemsContainer.innerHTML = '';
-        
-        this.shopItems.forEach(item => {
-            const itemElement = document.createElement('div');
-            itemElement.className = 'shop-item';
-            if (this.currentEnergy < item.cost || item.currentLevel >= item.maxLevel) {
-                itemElement.classList.add('disabled');
-            }
-            
-            const nextLevel = item.currentLevel + 1;
-            const costMultiplier = item.currentLevel > 0 ? (1 + item.currentLevel * 0.5) : 1;
-            const currentCost = Math.round(item.cost * costMultiplier);
-            
-            itemElement.innerHTML = `
-                <div class="item-name">${item.name} ${item.currentLevel > 0 ? `(Lvl ${item.currentLevel})` : ''}</div>
-                <div class="item-description">${item.description}</div>
-                <div class="item-cost">${currentCost} Energy</div>
-                ${item.currentLevel >= item.maxLevel ? '<div class="max-level">MAX LEVEL</div>' : ''}
-            `;
-            
-            if (this.currentEnergy >= currentCost && item.currentLevel < item.maxLevel) {
-                itemElement.addEventListener('click', () => this.purchaseUpgrade(item.id));
-            }
-            
-            shopItemsContainer.appendChild(itemElement);
-        });
-    }
-    
-    purchaseUpgrade(itemId) {
-        const item = this.shopItems.find(i => i.id === itemId);
-        if (!item) return;
-        
-        const costMultiplier = item.currentLevel > 0 ? (1 + item.currentLevel * 0.5) : 1;
-        const cost = Math.round(item.cost * costMultiplier);
-        
-        if (this.currentEnergy >= cost && item.currentLevel < item.maxLevel) {
-            // Deduct energy
-            this.addEnergy(-cost);
-            
-            // Increase item level
-            item.currentLevel++;
-            
-            // Apply upgrade effect
-            this.applyUpgradeEffect(item);
-            
-            // Re-render shop
-            this.renderShopItems();
-        }
-    }
-    
-    applyUpgradeEffect(item) {
-        switch(item.id) {
-            case 'word_multiplier':
-                // Update energy potential for all words
-                const multiplier = item.effect(item.currentLevel).energyMultiplier;
-                this.gameState.words.forEach(word => {
-                    const baseWord = WORDS_DATA.find(w => w.id === word.id);
-                    if (baseWord) {
-                        word.energyPotential = Math.round(baseWord.energyPotential * multiplier);
-                    }
-                });
-                break;
-                
-            case 'new_word':
-                // Add a new random word
-                this.addRandomWord();
-                break;
-                
-            case 'faster_regen':
-                // Words will generate energy faster (handled when clicking)
-                // Just a visual notification here
-                const speedEffect = item.effect(item.currentLevel).regenSpeed;
-                this.showUpgradeEffect(`Energy regen speed: ${Math.round(speedEffect * 100)}%`);
-                break;
-                
-            case 'word_size':
-                // Increase size of all words
-                const sizeMultiplier = item.effect(item.currentLevel).sizeMultiplier;
-                this.gameState.words.forEach(word => {
-                    const newSize = word.size * (1 + 0.15);
-                    word.element.style.width = `${newSize}px`;
-                    word.element.style.height = `${newSize}px`;
-                    word.size = newSize;
-                    word.radius = newSize / 2;
-                    word.mass = Math.PI * word.radius * word.radius;
-                });
-                break;
-        }
-    }
-    
-    addRandomWord() {
-        if (!this.container) return;
-        
-        // Get a random word data from WORDS_DATA
-        const randomIndex = Math.floor(Math.random() * WORDS_DATA.length);
-        const baseWordData = WORDS_DATA[randomIndex];
-        
-        // Create a slightly modified version
-        const wordData = {
-            id: `${baseWordData.id}_${Date.now()}`,
-            text: this.generateRandomName(baseWordData.text),
-            size: baseWordData.size * (0.8 + Math.random() * 0.4),
-            colors: {
-                primary: this.adjustColor(baseWordData.colors.primary),
-                secondary: this.adjustColor(baseWordData.colors.secondary)
-            },
-            energyPotential: Math.round(baseWordData.energyPotential * (0.8 + Math.random() * 0.6))
-        };
-        
-        // Create and add the new word
-        const word = new Word(wordData, this.container, this);
-        this.gameState.words.push(word);
-        
-        // Show visual effect
-        this.showUpgradeEffect(`New word added: ${wordData.text}`);
-    }
-    
-    generateRandomName(baseName) {
-        const adjectives = ['Cosmic', 'Quantum', 'Astral', 'Ethereal', 'Mystic', 'Arcane', 'Prismatic', 'Celestial'];
-        const nouns = ['Nexus', 'Echo', 'Pulse', 'Cipher', 'Vortex', 'Sigil', 'Nimbus', 'Flux'];
-        
-        if (Math.random() > 0.5) {
-            return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${baseName}`;
-        } else {
-            return `${baseName} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
-        }
-    }
-    
-    adjustColor(hexColor) {
-        // Add slight variation to the color
-        const r = parseInt(hexColor.slice(1, 3), 16);
-        const g = parseInt(hexColor.slice(3, 5), 16);
-        const b = parseInt(hexColor.slice(5, 7), 16);
-        
-        const variation = 30; // Color variation amount
-        
-        let newR = r + Math.floor((Math.random() - 0.5) * variation * 2);
-        let newG = g + Math.floor((Math.random() - 0.5) * variation * 2);
-        let newB = b + Math.floor((Math.random() - 0.5) * variation * 2);
-        
-        // Clamp values
-        newR = Math.max(0, Math.min(255, newR));
-        newG = Math.max(0, Math.min(255, newG));
-        newB = Math.max(0, Math.min(255, newB));
-        
-        return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
-    }
-    
-    showUpgradeEffect(message) {
-        if (!this.container) return;
-        
-        const notification = document.createElement('div');
-        notification.className = 'upgrade-notification';
-        notification.textContent = message;
-        notification.style.position = 'absolute';
-        notification.style.top = '50%';
-        notification.style.left = '50%';
-        notification.style.transform = 'translate(-50%, -50%)';
-        notification.style.backgroundColor = 'rgba(156, 39, 176, 0.8)';
-        notification.style.color = 'white';
-        notification.style.padding = '15px 25px';
-        notification.style.borderRadius = '10px';
-        notification.style.zIndex = '200';
-        notification.style.textAlign = 'center';
-        notification.style.fontSize = '1.2em';
-        notification.style.boxShadow = '0 0 20px rgba(156, 39, 176, 0.5)';
-        
-        this.container.appendChild(notification);
-        
-        // Animate and remove
-        setTimeout(() => {
-            notification.style.transition = 'opacity 1s ease-out';
-            notification.style.opacity = '0';
-            setTimeout(() => {
-                if (this.container && this.container.contains(notification)) {
-                    this.container.removeChild(notification);
-                }
-            }, 1000);
-        }, 2000);
-    }
-
-    addEnergy(amount) {
-        this.currentEnergy += amount;
-        this.updateEnergyDisplay();
-        
-        // Visual feedback for energy change
-        const energyCounter = this.energyDisplayElement;
-        if (energyCounter) {
-            if (amount > 0) {
-                energyCounter.classList.add('energy-increase');
-                energyCounter.dataset.amount = `+${amount}`;
-            } else if (amount < 0) {
-                energyCounter.classList.add('energy-decrease');
-                energyCounter.dataset.amount = amount;
-            }
-            
-            setTimeout(() => {
-                energyCounter.classList.remove('energy-increase', 'energy-decrease');
-            }, 500);
-        }
-    }
-
-    updateEnergyDisplay() {
-        if (this.energyDisplayElement) {
-            this.energyDisplayElement.textContent = `Energy: ${this.currentEnergy}`;
-        }
-    }
-
-    resolveInitialOverlaps(maxIterations = 10, pushFactor = 0.6) {
-        if (!this.container || this.gameState.words.length < 2) return;
-
-        for (let iter = 0; iter < maxIterations; iter++) {
-            let overlapsFound = false;
-            for (let i = 0; i < this.gameState.words.length; i++) {
-                for (let j = i + 1; j < this.gameState.words.length; j++) {
-                    const word1 = this.gameState.words[i];
-                    const word2 = this.gameState.words[j];
-
-                    const dx = (word2.x + word2.radius) - (word1.x + word1.radius);
-                    const dy = (word2.y + word2.radius) - (word1.y + word2.radius);
-                    const distSq = dx * dx + dy * dy;
-                    const minDist = word1.radius + word2.radius;
-                    const minDistSq = minDist * minDist;
-
-                    if (distSq < minDistSq * 1.05 && distSq > 1e-6) {
-                        overlapsFound = true;
-                        const dist = Math.sqrt(distSq);
-                        const overlap = minDist - dist;
-
-                        const pushX = (dx / dist) * (overlap * pushFactor);
-                        const pushY = (dy / dist) * (overlap * pushFactor);
-
-                        const totalMass = word1.mass + word2.mass;
-                        const pushRatio1 = totalMass > 0 ? word2.mass / totalMass : 0.5;
-                        const pushRatio2 = totalMass > 0 ? word1.mass / totalMass : 0.5;
-
-                        word1.x -= pushX * pushRatio1;
-                        word1.y -= pushY * pushRatio1;
-                        word2.x += pushX * pushRatio2;
-                        word2.y += pushY * pushRatio2;
-
-                        this.clampToBounds(word1);
-                        this.clampToBounds(word2);
-                    } else if (distSq <= 1e-6) {
-                        overlapsFound = true;
-                        word2.x += (Math.random() - 0.5) * 2;
-                        word2.y += (Math.random() - 0.5) * 2;
-                        this.clampToBounds(word2);
-                    }
-                }
-            }
-            this.gameState.words.forEach(word => word.updateElementPosition());
-            if (!overlapsFound) break;
-        }
-        this.gameState.words.forEach(word => word.updateElementPosition());
-    }
-
-    clampToBounds(word) {
-        if (!this.container) return;
-        const containerRect = this.container.getBoundingClientRect();
-        const leftBoundary = 0;
-        const rightBoundary = containerRect.width - word.size;
-        const topBoundary = 0;
-        const bottomBoundary = containerRect.height - word.size;
-
-        word.x = Math.max(leftBoundary, Math.min(word.x, rightBoundary));
-        word.y = Math.max(topBoundary, Math.min(word.y, bottomBoundary));
+        // Initialize Splash Screen, passing the ScreenManager's method
+        initSplashScreen(this.screenManager.showGameScreen.bind(this.screenManager));
+        // Initialize Shop System (fetches elements, sets up listeners)
+        this.shopSystem.initShop();
     }
 
     startGameLoop() {
-        const loop = (timestamp) => {
-            if (!this.gameState.active) return;
+        if (this.gameState.active) { // Prevent multiple loops if already active
+             console.warn("Game loop already started.");
+             return;
+        }
+        this.gameState.active = true;
+        this.lastTimestamp = performance.now();
+        console.log("Starting game loop");
 
-            const dt = Math.min((timestamp - this.lastTimestamp) / 1000, 0.1);
+        const loop = (timestamp) => {
+            if (!this.gameState.active) {
+                 console.log("Stopping game loop");
+                 return; // Exit loop if game state is inactive
+            }
+
+            // Calculate delta time, ensuring it's not excessively large
+            const dt = Math.min((timestamp - this.lastTimestamp) / 1000, 0.1); // Max dt 100ms
             this.lastTimestamp = timestamp;
 
+            // Update game logic only if on the game screen and container exists
             if (this.gameState.currentScreen === 'game' && this.container) {
                 this.updateGame(dt);
             }
 
+            // Request the next frame
             requestAnimationFrame(loop);
         };
 
+        // Start the loop
         requestAnimationFrame(loop);
     }
 
     updateGame(dt) {
-        if (!this.container) return;
+        if (!this.container || !this.gameState.active) return;
 
-        this.gameState.words.forEach(word => word.update(dt * 60));
+        // Update word physics (movement, boundaries) via Physics module
+        this.physics.updatePhysics(this.gameState.words, dt * 60, this.container); // Pass dt scaled for 60fps base
 
-        this.handleCollisions();
-    }
-
-    handleCollisions() {
-        const words = this.gameState.words;
-        const numWords = words.length;
-
-        for (let i = 0; i < numWords; i++) {
-            for (let j = i + 1; j < numWords; j++) {
-                const word1 = words[i];
-                const word2 = words[j];
-
-                const dx = (word2.x + word2.radius) - (word1.x + word1.radius);
-                const dy = (word2.y + word2.radius) - (word1.y + word1.radius);
-                const distSq = dx * dx + dy * dy;
-                const minDist = word1.radius + word2.radius;
-                const minDistSq = minDist * minDist;
-
-                if (distSq < minDistSq && distSq > 1e-6) {
-                    const dist = Math.sqrt(distSq);
-                    const overlap = minDist - dist;
-
-                    const nx = dx / dist;
-                    const ny = dy / dist;
-
-                    const invMass1 = word1.mass > 0 ? 1 / word1.mass : 0;
-                    const invMass2 = word2.mass > 0 ? 1 / word2.mass : 0;
-                    const totalInverseMass = invMass1 + invMass2;
-
-                    if (totalInverseMass > 0) {
-                        const move1 = overlap * (invMass1 / totalInverseMass);
-                        const move2 = overlap * (invMass2 / totalInverseMass);
-
-                        word1.x -= nx * move1;
-                        word1.y -= ny * move1;
-                        word2.x += nx * move2;
-                        word2.y += ny * move2;
-
-                        word1.updateElementPosition();
-                        word2.updateElementPosition();
-                        this.clampToBounds(word1);
-                        this.clampToBounds(word2);
-                    }
-
-                    const relVx = word1.vx - word2.vx;
-                    const relVy = word1.vy - word2.vy;
-
-                    const velAlongNormal = relVx * nx + relVy * ny;
-
-                    if (velAlongNormal > 0) {
-                        continue;
-                    }
-
-                    const restitution = Math.min(word1.restitution, word2.restitution);
-                    let j = -(1 + restitution) * velAlongNormal;
-                    if (totalInverseMass > 0) {
-                        j /= totalInverseMass;
-                    } else {
-                        j = 0;
-                    }
-
-                    const impulseX = j * nx;
-                    const impulseY = j * ny;
-
-                    word1.vx += impulseX * invMass1;
-                    word1.vy += impulseY * invMass1;
-                    word2.vx -= impulseX * invMass2;
-                    word2.vy -= impulseY * invMass2;
-
-                    const now = performance.now();
-                    if (now - this.lastCollisionTime > this.collisionCooldown) {
-                        const impactSpeed = Math.abs(velAlongNormal);
-                        if (impactSpeed > 1) {
-                            let sound;
-                            if (impactSpeed < 3) sound = this.collisionSounds.light;
-                            else if (impactSpeed < 6) sound = this.collisionSounds.medium;
-                            else sound = this.collisionSounds.heavy;
-
-                            if (sound && sound.readyState >= 2) {
-                                sound.playbackRate = 0.9 + Math.random() * 0.2;
-                                sound.volume = Math.min(0.1 + impactSpeed * 0.05, 0.5);
-                                sound.currentTime = 0;
-                                sound.play().catch(e => {
-                                });
-                                this.lastCollisionTime = now;
-                            }
-                        }
-                    }
-
-                    if (Math.abs(velAlongNormal) > 0.5) {
-                        const contactX = (word1.x + word1.radius) + nx * (word1.radius - overlap / 2);
-                        const contactY = (word1.y + word1.radius) + ny * (word1.radius - overlap / 2);
-                        this.createCollisionEffect(contactX, contactY, Math.abs(velAlongNormal));
-                    }
-                }
-            }
-        }
-    }
-
-    createCollisionEffect(x, y, intensity) {
-        if (!this.container) return;
-
-        const size = Math.min(5 + intensity * 2, 15);
-        const particle = document.createElement('div');
-        particle.classList.add('collision-particle');
-        particle.style.left = `${x}px`;
-        particle.style.top = `${y}px`;
-        particle.style.width = `${size}px`;
-        particle.style.height = `${size}px`;
-        particle.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-        particle.style.borderRadius = '50%';
-        particle.style.position = 'absolute';
-        particle.style.pointerEvents = 'none';
-        particle.style.transform = 'translate(-50%, -50%)';
-        this.container.appendChild(particle);
-
-        particle.animate([
-            { opacity: 0.8, transform: 'translate(-50%, -50%) scale(0.5)' },
-            { opacity: 0, transform: 'translate(-50%, -50%) scale(1.5)' }
-        ], {
-            duration: 300,
-            easing: 'ease-out'
-        }).onfinish = () => {
-            if (this.container && this.container.contains(particle)) {
-                this.container.removeChild(particle);
-            }
-        };
+        // Handle collisions via Physics module
+        this.physics.handleCollisions(this.gameState.words, this.container);
     }
 
     stopGameLoop() {
+        console.log("Requesting game loop stop");
         this.gameState.active = false;
     }
 }
