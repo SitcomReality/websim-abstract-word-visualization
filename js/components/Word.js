@@ -18,6 +18,7 @@ export class Word {
         const wordDefinition = WORDS_DATA.find(wd => wd.id === this.id);
         this.baseEnergyPotential = wordDefinition ? wordDefinition.energyPotential : 0;
         this.energyPotential = this.baseEnergyPotential;
+        this.description = wordDefinition?.description || this.text; // Store description
 
         this.x = 0;
         this.y = 0;
@@ -44,14 +45,14 @@ export class Word {
         this.element = document.createElement('div');
         this.element.id = this.id;
         this.element.className = 'word';
-        
-        // Add description element
-        const description = document.createElement('div');
-        description.className = 'word-description';
-        description.textContent = WORDS_DATA.find(w => w.id === this.id)?.description || this.text;
-        
+
+        // Add description element using stored description
+        const descriptionEl = document.createElement('div');
+        descriptionEl.className = 'word-description';
+        descriptionEl.textContent = this.description;
+
         this.element.innerHTML = `<span>${this.text}</span>`;
-        this.element.appendChild(description);
+        this.element.appendChild(descriptionEl);
 
         this.element.style.width = `${this.size}px`;
         this.element.style.height = `${this.size}px`;
@@ -85,7 +86,7 @@ export class Word {
 
         window.addEventListener('touchmove', (e) => {
             if (this.isDragging) {
-                e.preventDefault();
+                // e.preventDefault(); // Removed to allow scrolling outside word
                 this.interactionHandler.drag(e.touches[0]);
             }
         }, { passive: false });
@@ -151,17 +152,17 @@ export class Word {
         }
 
         this.updateElementPosition();
-        
+
         // Visual indication of resonance compatibility with last activated word
         this.updateResonanceVisuals();
     }
 
     updateResonanceVisuals() {
-        if (!this.engine.resonanceSystem || !this.element) return;
-        
+        if (!this.engine.resonanceSystem || !this.element || this.engine.gameState.currentScreen !== 'game') return;
+
         // Check if this word can form a resonance with the last activated word
         const hasResonance = this.engine.resonanceSystem.canFormResonance(this);
-        
+
         if (hasResonance) {
             this.element.classList.add('resonance-ready');
         } else {
@@ -170,23 +171,21 @@ export class Word {
     }
 
     updateElementPosition() {
-        if (!isNaN(this.x) && !isNaN(this.y)) {
+        if (!isNaN(this.x) && !isNaN(this.y) && this.element) {
             this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
-        } else {
+        } else if (this.element) {
             console.warn(`Invalid position for word ${this.id}: (${this.x}, ${this.y}). Resetting to 0,0.`);
             this.x = 0;
             this.y = 0;
             this.vx = 0;
             this.vy = 0;
-            if (this.element) {
-                this.element.style.transform = `translate(0px, 0px)`;
-            }
+            this.element.style.transform = `translate(0px, 0px)`;
         }
     }
 
     activate() {
         if (this.element.classList.contains('active') || this.isDragging || this.isBeingDestroyed) return;
-        
+
         // Check activation cooldown
         const now = Date.now();
         if (now - this.lastActivationTime < this.activationCooldown) {
@@ -194,12 +193,12 @@ export class Word {
             this.showCooldownFeedback();
             return;
         }
-        
+
         this.lastActivationTime = now;
         this.activationCount++;
 
         this.element.classList.add('active', 'dopamine-pop');
-        
+
         // Remove animation class after it completes
         setTimeout(() => {
             if (this.element) this.element.classList.remove('dopamine-pop');
@@ -210,33 +209,36 @@ export class Word {
         createSpecialEffect(this.id, centerX, centerY, this.colors.primary);
 
         // Apply resonance multiplier if system exists
-        let energyMultiplier = 1;
+        let resonanceMultiplier = 1;
         if (this.engine.resonanceSystem) {
-            energyMultiplier = this.engine.resonanceSystem.wordActivated(this);
-        }
-        
-        // Apply combo system multiplier if it exists
-        if (this.engine.comboSystem) {
-            energyMultiplier *= this.engine.comboSystem.registerActivation();
+            resonanceMultiplier = this.engine.resonanceSystem.wordActivated(this);
         }
 
+        // Apply combo system multiplier if it exists
+        let comboMultiplier = 1;
+        if (this.engine.comboSystem) {
+            comboMultiplier = this.engine.comboSystem.registerActivation();
+        }
+
+        const totalMultiplier = resonanceMultiplier * comboMultiplier;
+
         if (this.engine && typeof this.engine.addEnergy === 'function') {
-            const energyGained = this.energyPotential * energyMultiplier;
+            const energyGained = this.energyPotential * totalMultiplier;
             this.engine.addEnergy(energyGained);
-            
+
             // Show the multiplier if > 1
-            if (energyMultiplier > 1) {
-                this.showMultiplierEffect(energyMultiplier);
+            if (totalMultiplier > 1) {
+                this.showMultiplierEffect(totalMultiplier);
             }
-            
+
             // Track word activations for achievements
             if (this.engine.achievementSystem) {
                 this.engine.achievementSystem.incrementAchievementProgress('word_activator');
             }
-            
+
             // Add floating particles for extra visual feedback
             this.createFloatingRewardParticles(centerX, centerY, Math.ceil(energyGained));
-            
+
             // Show tutorial hints based on activation count
             this.showTutorialHints();
         } else {
@@ -249,17 +251,17 @@ export class Word {
             }
         }, 1500);
     }
-    
+
     showCooldownFeedback() {
         if (!this.element) return;
-        
+
         // Brief visual feedback for cooldown
         this.element.classList.add('cooldown-flash');
         setTimeout(() => {
-            this.element.classList.remove('cooldown-flash');
+            if (this.element) this.element.classList.remove('cooldown-flash');
         }, 300);
     }
-    
+
     showTutorialHints() {
         // Simple tutorial system based on word activation count
         if (this.activationCount === 1 && this.engine.gameState.tutorialStep === 0) {
@@ -275,13 +277,14 @@ export class Word {
     }
 
     createFloatingRewardParticles(x, y, amount) {
+        if (!this.container) return;
         const particleCount = Math.min(Math.ceil(amount / 5), 8); // Scale particles with energy, max 8
-        
+
         for (let i = 0; i < particleCount; i++) {
             const particle = document.createElement('div');
             particle.className = 'energy-particle';
             particle.textContent = '+' + (i === 0 ? amount : '');
-            
+
             particle.style.position = 'absolute';
             particle.style.left = `${x + (Math.random() - 0.5) * 30}px`;
             particle.style.top = `${y}px`;
@@ -291,26 +294,26 @@ export class Word {
             particle.style.textShadow = '0 0 5px rgba(0,0,0,0.8)';
             particle.style.zIndex = '100';
             particle.style.pointerEvents = 'none';
-            
+
             this.container.appendChild(particle);
-            
+
             const angle = (Math.random() * Math.PI) - (Math.PI/2); // Upward trajectory
             const speed = 2 + Math.random() * 3;
-            
+
             particle.animate([
-                { 
-                    transform: 'translate(-50%, -50%)', 
-                    opacity: 1 
+                {
+                    transform: 'translate(-50%, -50%)',
+                    opacity: 1
                 },
-                { 
+                {
                     transform: `translate(${Math.cos(angle) * 100}px, ${Math.sin(angle) * 100 - 50}px) scale(${i === 0 ? 1.2 : 0.8})`,
-                    opacity: 0 
+                    opacity: 0
                 }
             ], {
                 duration: 800 + Math.random() * 400,
                 easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)'
             }).onfinish = () => {
-                if (this.container.contains(particle)) {
+                if (this.container && this.container.contains(particle)) {
                     this.container.removeChild(particle);
                 }
             };
@@ -318,23 +321,24 @@ export class Word {
     }
 
     showMultiplierEffect(multiplier) {
+        if (!this.container) return;
         const multiplierEl = document.createElement('div');
         multiplierEl.className = 'word-multiplier';
         multiplierEl.textContent = `×${multiplier.toFixed(1)}`;
-        
+
         multiplierEl.style.position = 'absolute';
         multiplierEl.style.left = `${this.x + this.size/2}px`;
         multiplierEl.style.top = `${this.y - 20}px`;
-        multiplierEl.style.color = '#4caf50';
+        multiplierEl.style.color = '#4caf50'; // Use green for general multiplier
         multiplierEl.style.fontWeight = 'bold';
         multiplierEl.style.fontSize = '1.2em';
         multiplierEl.style.textShadow = '0 0 5px rgba(0,0,0,0.8)';
         multiplierEl.style.pointerEvents = 'none';
         multiplierEl.style.zIndex = '200';
         multiplierEl.style.transform = 'translate(-50%, -50%)';
-        
+
         this.container.appendChild(multiplierEl);
-        
+
         multiplierEl.animate([
             { opacity: 1, transform: 'translate(-50%, -50%)' },
             { opacity: 0, transform: 'translate(-50%, -100%)' }
@@ -342,7 +346,7 @@ export class Word {
             duration: 1200,
             easing: 'ease-out'
         }).onfinish = () => {
-            if (this.container.contains(multiplierEl)) {
+            if (this.container && this.container.contains(multiplierEl)) {
                 this.container.removeChild(multiplierEl);
             }
         };
@@ -353,8 +357,9 @@ export class Word {
             this.vx += impulseX / this.mass;
             this.vy += impulseY / this.mass;
         } else {
-            this.vx += impulseX;
-            this.vy += impulseY;
+            // Avoid division by zero or very small mass
+            this.vx += impulseX * 10; // Arbitrary large multiplier
+            this.vy += impulseY * 10;
         }
     }
 
@@ -370,28 +375,27 @@ export class Word {
             }
         }
 
-        if (skipAnimation) {
-            if (this.element && this.container.contains(this.element)) {
+        if (skipAnimation || !this.element || !this.container) {
+            if (this.element && this.container && this.container.contains(this.element)) {
                 this.container.removeChild(this.element);
             }
             this.element = null;
         } else {
-            if (this.element) {
-                this.element.classList.add('destroy');
-                this.element.style.pointerEvents = 'none';
-                this.element.animate([
-                    { opacity: 1, transform: `${this.element.style.transform || 'translate(0,0)'} scale(1)` },
-                    { opacity: 0, transform: `${this.element.style.transform || 'translate(0,0)'} scale(0.5)` }
-                ], {
-                    duration: 500,
-                    easing: 'ease-in'
-                }).onfinish = () => {
-                    if (this.element && this.container.contains(this.element)) {
-                        this.container.removeChild(this.element);
-                    }
-                    this.element = null;
-                };
-            }
+            this.element.classList.add('destroy');
+            this.element.style.pointerEvents = 'none';
+            const currentTransform = this.element.style.transform || 'translate(0,0)';
+            this.element.animate([
+                { opacity: 1, transform: `${currentTransform} scale(1)` },
+                { opacity: 0, transform: `${currentTransform} scale(0.5)` }
+            ], {
+                duration: 500,
+                easing: 'ease-in'
+            }).onfinish = () => {
+                if (this.element && this.container && this.container.contains(this.element)) {
+                    this.container.removeChild(this.element);
+                }
+                this.element = null;
+            };
         }
     }
 }

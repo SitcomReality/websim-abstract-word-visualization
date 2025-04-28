@@ -3,207 +3,234 @@ export class ResonanceSystem {
         this.engine = engine;
         this.activeChains = [];
         this.chainTypes = {
-            ETYMOLOGICAL: { name: 'Etymological', multiplier: 1.5, color: '#9c27b0' },
-            SEMANTIC: { name: 'Semantic', multiplier: 1.8, color: '#2196f3' },
-            PHONETIC: { name: 'Phonetic', multiplier: 1.3, color: '#ff9800' },
-            CHROMATIC: { name: 'Chromatic', multiplier: 2.0, color: '#4caf50' }
+            ETYMOLOGICAL: { name: 'Etymological', multiplier: 1.5, color: '#9c27b0' }, 
+            SEMANTIC: { name: 'Semantic', multiplier: 1.8, color: '#2196f3' }, 
+            PHONETIC: { name: 'Phonetic', multiplier: 1.3, color: '#ff9800' }, 
+            CHROMATIC: { name: 'Chromatic', multiplier: 2.0, color: '#4caf50' } 
         };
         this.wordAffinities = {
-            // Etymological connections
             logos_aether: 'ETYMOLOGICAL',
             logos_quintessence: 'ETYMOLOGICAL',
             kairos_monad: 'ETYMOLOGICAL',
-            
-            // Semantic connections
+            aether_quintessence: 'ETYMOLOGICAL',
             apeiron_entropy: 'SEMANTIC',
             aether_anima: 'SEMANTIC',
-            monad_logos: 'SEMANTIC',
-            
-            // Phonetic connections
-            kairos_anima: 'PHONETIC',
-            logos_monad: 'PHONETIC',
-            
-            // Chromatic connections (based on complementary colors)
-            entropy_quintessence: 'CHROMATIC',
-            apeiron_monad: 'CHROMATIC'
+            monad_logos: 'SEMANTIC', 
+            anima_kairos: 'SEMANTIC', 
+            kairos_logos: 'PHONETIC', 
+            aether_apeiron: 'PHONETIC',
+            entropy_quintessence: 'CHROMATIC', 
+            apeiron_monad: 'CHROMATIC', 
+            logos_aether: 'CHROMATIC' 
         };
-        
+
         this.lastActivatedWord = null;
         this.activationTimeout = null;
-        this.chainDecayTime = 6000; // 6 seconds until chain decays
-        
+        this.baseChainDecayTime = 6000;
+        this.chainDecayTime = this.baseChainDecayTime;
+
         this.resonanceDisplay = null;
         this.initResonanceDisplay();
     }
-    
+
     initResonanceDisplay() {
+        const gameScreen = document.getElementById('game-screen');
+        if (!gameScreen) {
+             console.warn("Game screen not found, cannot initialize resonance display.");
+             return;
+        }
         this.resonanceDisplay = document.createElement('div');
         this.resonanceDisplay.id = 'resonance-display';
-        document.getElementById('game-screen').appendChild(this.resonanceDisplay);
+        gameScreen.appendChild(this.resonanceDisplay); 
+        this.resonanceDisplay.style.display = 'none'; 
     }
-    
+
     wordActivated(word) {
-        if (!this.lastActivatedWord) {
+        if (!this.lastActivatedWord || word === this.lastActivatedWord) {
             this.lastActivatedWord = word;
             this.startChainTimer();
-            return 1; // No chain yet
+            this.clearVisuals(); 
+            return 1; 
         }
-        
-        // Check for affinities between current and last word
+
         const chainKey1 = `${this.lastActivatedWord.id}_${word.id}`;
         const chainKey2 = `${word.id}_${this.lastActivatedWord.id}`;
-        const chainType = this.wordAffinities[chainKey1] || this.wordAffinities[chainKey2];
-        
-        if (chainType) {
-            clearTimeout(this.activationTimeout);
+        const chainTypeKey = this.wordAffinities[chainKey1] || this.wordAffinities[chainKey2];
+
+        let currentMultiplier = 1;
+
+        if (chainTypeKey) {
+            clearTimeout(this.activationTimeout); 
             this.startChainTimer();
-            
-            // Find existing chain or create new one
-            let chain = this.activeChains.find(c => c.type === chainType);
+
+            const chainType = this.chainTypes[chainTypeKey];
+
+            let chain = this.activeChains.find(c => c.type === chainTypeKey);
             if (!chain) {
                 chain = {
-                    type: chainType,
-                    words: [this.lastActivatedWord],
-                    multiplier: this.chainTypes[chainType].multiplier,
+                    type: chainTypeKey,
+                    words: [this.lastActivatedWord], 
+                    multiplier: chainType.multiplier, 
                     startTime: Date.now()
                 };
                 this.activeChains.push(chain);
-                
-                // Show special effect for new chain
                 this.showChainStartEffect(chain);
+            } else {
+                 chain.startTime = Date.now();
             }
-            
-            // Add word to chain if not already in it
-            if (!chain.words.includes(word)) {
-                chain.words.push(word);
-                chain.multiplier += 0.2; // Increase multiplier with each new word
-                
-                // Show connection effect between words
-                this.showConnectionEffect(this.lastActivatedWord, word, this.chainTypes[chainType].color);
+
+            if (chain.words[chain.words.length - 1] !== word) {
+                 if (!chain.words.includes(word)) {
+                    chain.words.push(word);
+                    chain.multiplier = parseFloat((chain.multiplier + 0.2).toFixed(1));
+                 }
+                 this.showConnectionEffect(this.lastActivatedWord, word, chainType.color);
             }
-            
-            this.lastActivatedWord = word;
-            this.updateResonanceDisplay();
-            
-            // Return the current chain multiplier
-            return chain.multiplier;
+
+            this.lastActivatedWord = word; 
+            this.updateResonanceDisplay(); 
+
+            currentMultiplier = chain.multiplier; 
         } else {
-            // No resonance found, but still track as last word
-            clearTimeout(this.activationTimeout);
-            this.startChainTimer();
-            this.lastActivatedWord = word;
-            
-            return 1; // No chain multiplier
+            this.lastActivatedWord = word; 
+            this.activeChains = []; 
+            this.clearChainTimer(); 
+            this.startChainTimer(); 
+            this.updateResonanceDisplay(); 
+            currentMultiplier = 1; 
         }
+        
+        this.updateAllWordVisuals();
+
+        return currentMultiplier;
     }
-    
+
     canFormResonance(word) {
         if (!this.lastActivatedWord || word === this.lastActivatedWord) return false;
-        
+
         const chainKey1 = `${this.lastActivatedWord.id}_${word.id}`;
         const chainKey2 = `${word.id}_${this.lastActivatedWord.id}`;
         return !!(this.wordAffinities[chainKey1] || this.wordAffinities[chainKey2]);
     }
-    
+
+    clearChainTimer() {
+        if (this.activationTimeout) {
+            clearTimeout(this.activationTimeout);
+            this.activationTimeout = null;
+        }
+    }
+
     startChainTimer() {
+        this.clearChainTimer(); 
         this.activationTimeout = setTimeout(() => {
+            console.log("Resonance chain decayed.");
             this.lastActivatedWord = null;
             this.activeChains = [];
             this.updateResonanceDisplay();
+            this.clearVisuals(); 
         }, this.chainDecayTime);
     }
+
+    clearVisuals() {
+        if (this.engine && this.engine.gameState && this.engine.gameState.words) {
+            this.engine.gameState.words.forEach(w => {
+                if (w.element) {
+                    w.element.classList.remove('resonance-ready');
+                }
+            });
+        }
+    }
     
+    updateAllWordVisuals() {
+        if (this.engine && this.engine.gameState && this.engine.gameState.words) {
+            this.engine.gameState.words.forEach(w => w.updateResonanceVisuals());
+        }
+    }
+
     showChainStartEffect(chain) {
-        // Create a particle burst for new chain
-        const container = document.getElementById('game-screen');
-        if (!container) return;
-        
+        const displayArea = this.resonanceDisplay || document.body; 
+        const rect = displayArea.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top - 30; 
+
         const particles = 15;
         const color = this.chainTypes[chain.type].color;
-        
+
         for (let i = 0; i < particles; i++) {
             const particle = document.createElement('div');
             particle.className = 'resonance-particle';
-            
+
             const size = 5 + Math.random() * 8;
             particle.style.width = `${size}px`;
             particle.style.height = `${size}px`;
             particle.style.background = color;
             particle.style.borderRadius = '50%';
-            particle.style.position = 'fixed';
-            particle.style.bottom = '20px';
-            particle.style.left = '20px';
+            particle.style.position = 'fixed'; 
+            particle.style.left = `${x + (Math.random() - 0.5) * 40}px`; 
+            particle.style.top = `${y + (Math.random() - 0.5) * 20}px`;
             particle.style.opacity = '0.8';
             particle.style.zIndex = '110';
             particle.style.pointerEvents = 'none';
-            
-            container.appendChild(particle);
-            
-            const angle = Math.random() * Math.PI * 2;
+
+            document.body.appendChild(particle); 
+
+            const angle = (Math.random() - 0.5) * Math.PI; 
             const distance = 50 + Math.random() * 100;
-            
+
             particle.animate([
-                { transform: 'translate(0, 0)', opacity: 0.8 },
-                { 
-                    transform: `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`, 
-                    opacity: 0 
+                { transform: 'translate(0, 0) scale(1)', opacity: 0.8 },
+                {
+                    transform: `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) scale(0.5)`,
+                    opacity: 0
                 }
             ], {
                 duration: 1000 + Math.random() * 500,
                 easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)'
             }).onfinish = () => {
-                if (container.contains(particle)) {
-                    container.removeChild(particle);
+                if (document.body.contains(particle)) {
+                    document.body.removeChild(particle);
                 }
             };
         }
     }
-    
+
     showConnectionEffect(word1, word2, color) {
-        const container = document.getElementById('game-screen');
-        if (!container || !word1 || !word2) return;
-        
+        const container = this.engine.container; 
+        if (!container || !word1 || !word2 || !word1.element || !word2.element) return;
+
         const x1 = word1.x + word1.radius;
         const y1 = word1.y + word1.radius;
         const x2 = word2.x + word2.radius;
         const y2 = word2.y + word2.radius;
-        
-        // Create a connecting line
+
         const connection = document.createElement('div');
         connection.className = 'resonance-connection';
-        
-        // Calculate line properties
+
         const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
         const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
-        
-        // Position the line
-        connection.style.position = 'absolute';
+
+        connection.style.position = 'absolute'; 
         connection.style.width = `${length}px`;
         connection.style.height = '3px';
-        connection.style.background = color;
+        connection.style.background = `linear-gradient(to right, ${color}66, ${color}ff, ${color}66)`; 
         connection.style.left = `${x1}px`;
         connection.style.top = `${y1}px`;
         connection.style.transformOrigin = '0 50%';
         connection.style.transform = `rotate(${angle}deg)`;
         connection.style.opacity = '0.7';
-        connection.style.zIndex = '95';
+        connection.style.zIndex = '95'; 
         connection.style.pointerEvents = 'none';
+        connection.style.borderRadius = '2px';
         container.appendChild(connection);
-        
-        // Animate the connection
+
         connection.animate([
-            { opacity: 0.7, height: '3px' },
-            { opacity: 0, height: '8px' }
+            { opacity: 0.7, transform: `rotate(${angle}deg) scaleY(1)` },
+            { opacity: 0, transform: `rotate(${angle}deg) scaleY(2)` } 
         ], {
-            duration: 1000,
-            easing: 'ease-out'
-        }).onfinish = () => {
-            if (container.contains(connection)) {
-                container.removeChild(connection);
-            }
-        };
+            duration: 800,
+        });
     }
-    
+
     updateResonanceDisplay() {
         if (!this.resonanceDisplay) return;
         
@@ -236,11 +263,10 @@ export class ResonanceSystem {
         
         this.resonanceDisplay.innerHTML = html;
     }
-    
+
     getActiveMultiplier() {
         if (this.activeChains.length === 0) return 1;
         
-        // Return the highest active multiplier
         return Math.max(...this.activeChains.map(chain => chain.multiplier));
     }
 }
