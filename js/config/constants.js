@@ -45,14 +45,14 @@ export const SIZES = {
 };
 
 export const WORDS_DATA = [
-    { id: 'smorma', text: 'Smorma pips', size: SIZES.SMORMA, colors: COLORS.SMORMA },
-    { id: 'pips', text: 'Pips', size: SIZES.PIPS, colors: COLORS.PIPS },
-    { id: 'tine', text: 'Tine', size: SIZES.TINE, colors: COLORS.TINE },
-    { id: 'elusive', text: 'Elusive allusion', size: SIZES.ELUSIVE, colors: COLORS.ELUSIVE },
-    { id: 'paradiastolic', text: 'Paradiastolic clotting', size: SIZES.PARADIASTOLIC, colors: COLORS.PARADIASTOLIC },
-    { id: 'perihelion', text: 'Perihelion torsion', size: SIZES.PERIHELION, colors: COLORS.PERIHELION },
-    { id: 'scolflocs', text: 'Scolflocs periporter', size: SIZES.SCOLFLOCS, colors: COLORS.SCOLFLOCS },
-    { id: 'hyperbolic', text: 'Hyperbolic lenity', size: SIZES.HYPERBOLIC, colors: COLORS.HYPERBOLIC }
+    { id: 'smorma', text: 'Smorma pips', size: SIZES.SMORMA, colors: COLORS.SMORMA, energyPotential: 10 },
+    { id: 'pips', text: 'Pips', size: SIZES.PIPS, colors: COLORS.PIPS, energyPotential: 5 },
+    { id: 'tine', text: 'Tine', size: SIZES.TINE, colors: COLORS.TINE, energyPotential: 7 },
+    { id: 'elusive', text: 'Elusive allusion', size: SIZES.ELUSIVE, colors: COLORS.ELUSIVE, energyPotential: 12 },
+    { id: 'paradiastolic', text: 'Paradiastolic clotting', size: SIZES.PARADIASTOLIC, colors: COLORS.PARADIASTOLIC, energyPotential: 15 },
+    { id: 'perihelion', text: 'Perihelion torsion', size: SIZES.PERIHELION, colors: COLORS.PERIHELION, energyPotential: 11 },
+    { id: 'scolflocs', text: 'Scolflocs periporter', size: SIZES.SCOLFLOCS, colors: COLORS.SCOLFLOCS, energyPotential: 14 },
+    { id: 'hyperbolic', text: 'Hyperbolic lenity', size: SIZES.HYPERBOLIC, colors: COLORS.HYPERBOLIC, energyPotential: 13 }
 ];
 
 export const EFFECT_SETTINGS = {

@@ -11,6 +11,8 @@ export class Engine {
         };
         this.lastTimestamp = 0;
         this.container = null;
+        this.currentEnergy = 0;
+        this.energyDisplayElement = null;
 
         this.collisionSounds = {
             light: new Audio(),
@@ -33,9 +35,12 @@ export class Engine {
         if (gameScreen) {
             gameScreen.classList.add('active');
             this.container = gameScreen.querySelector('.container');
+            this.energyDisplayElement = document.getElementById('energy-counter');
+            this.updateEnergyDisplay(); // Initialize display
 
             if (this.container) {
-                const gameComponents = initGameScreen();
+                // Pass the engine instance to initGameScreen
+                const gameComponents = initGameScreen(this);
                 this.gameState.words = gameComponents.words;
 
                 this.resolveInitialOverlaps();
@@ -49,6 +54,18 @@ export class Engine {
             }
         } else {
             console.error("Game screen element not found!");
+        }
+    }
+
+    addEnergy(amount) {
+        this.currentEnergy += amount;
+        this.updateEnergyDisplay();
+        // console.log(`Energy gained: ${amount}, Total: ${this.currentEnergy}`); // For debugging
+    }
+
+    updateEnergyDisplay() {
+        if (this.energyDisplayElement) {
+            this.energyDisplayElement.textContent = `Energy: ${this.currentEnergy}`;
         }
     }
 

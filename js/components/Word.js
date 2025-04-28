@@ -1,17 +1,21 @@
 import { getRandomPosition } from 'utils/position.js';
 import { createTrail } from 'components/Trail.js';
 import { createSpecialEffect } from 'effects/effectManager.js';
-import { PHYSICS_CONFIG } from 'config/constants.js';
+import { PHYSICS_CONFIG, WORDS_DATA } from 'config/constants.js';
 
 export class Word {
-    constructor(data, container) {
+    constructor(data, container, engine) {
         this.id = data.id;
         this.text = data.text;
         this.size = data.size;
         this.radius = this.size / 2;
         this.colors = data.colors;
         this.container = container;
+        this.engine = engine;
         this.element = null;
+
+        const wordDefinition = WORDS_DATA.find(wd => wd.id === this.id);
+        this.energyPotential = wordDefinition ? wordDefinition.energyPotential : 0;
 
         this.x = 0;
         this.y = 0;
@@ -144,6 +148,12 @@ export class Word {
         const centerX = this.x + this.radius;
         const centerY = this.y + this.radius;
         createSpecialEffect(this.id, centerX, centerY, this.colors.primary);
+
+        if (this.engine && typeof this.engine.addEnergy === 'function') {
+            this.engine.addEnergy(this.energyPotential);
+        } else {
+            console.warn(`Word ${this.id}: Engine not available for energy harvesting.`);
+        }
 
         setTimeout(() => {
             if (this.element && this.element.classList.contains('active')) {
