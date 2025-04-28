@@ -50,57 +50,6 @@ body {
     animation: colorful-glow 2s infinite;
 }
 
-/* Dark mode toggle */
-#theme-toggle {
-    position: fixed;
-    right: 20px;
-    bottom: 20px;
-    width: 50px;
-    height: 50px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 2px solid #9c27b0;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    cursor: pointer;
-    z-index: 900;
-    transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 0 10px rgba(156, 39, 176, 0.3);
-}
-
-#theme-toggle:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 15px rgba(156, 39, 176, 0.6);
-}
-
-body.light-mode {
-    background: #f0f0f0;
-    color: #121212;
-}
-
-body.light-mode .word {
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-}
-
-body.light-mode #energy-counter,
-body.light-mode #shop-button {
-    background-color: rgba(255, 255, 255, 0.8);
-    color: #121212;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-}
-
-body.light-mode #resonance-display {
-    background: rgba(255, 255, 255, 0.9);
-    color: #121212;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-}
-
-body.light-mode .resonance-chain {
-    background: rgba(0, 0, 0, 0.05);
-}
-
 .combo-counter {
     position: fixed;
     left: 50%;
@@ -163,7 +112,7 @@ body.light-mode .resonance-chain {
 .discovery-icon {
     font-size: 2em;
 }
- 
+
 .discovery-content {
     flex: 1;
 }

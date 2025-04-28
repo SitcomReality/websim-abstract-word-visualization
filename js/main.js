@@ -21,19 +21,5 @@ WORDS_DATA.forEach(word => {
 document.addEventListener('DOMContentLoaded', () => {
     const engine = new Engine();
     engine.init();
-    
-    // Initialize theme toggle
-    initThemeToggle();
 });
 
-function initThemeToggle() {
-    const themeToggle = document.createElement('div');
-    themeToggle.id = 'theme-toggle';
-    themeToggle.innerHTML = '🌙';
-    document.body.appendChild(themeToggle);
-    
-    themeToggle.addEventListener('click', () => {
-        const isLightMode = document.body.classList.toggle('light-mode');
-        themeToggle.innerHTML = isLightMode ? '☀️' : '🌙';
-    });
-}

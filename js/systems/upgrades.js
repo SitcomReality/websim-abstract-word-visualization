@@ -181,6 +181,55 @@ export class UpgradeSystem {
                 }
             }
         },
+        // Add new upgrades from GDD
+        {
+            id: 'eternalism',
+            name: 'Eternalism',
+            description: 'Time effects are eliminated. All cooldowns are removed, but energy generation is reduced by 40%.',
+            cost: 130,
+            maxLevel: 1,
+            applyEffect: (engine, level) => {
+                if (level === 1) {
+                    console.log("Applying Eternalism");
+                    engine.gameState.eternalismActive = true;
+                    // Effect is applied in WordBehavior.activate
+                }
+            }
+        },
+        {
+            id: 'categorical_imperative',
+            name: 'Categorical Imperative',
+            description: 'You must activate spheres in strict size order (small→medium→large), but completing a sequence grants massive energy bonuses.',
+            cost: 175,
+            maxLevel: 1,
+            applyEffect: (engine, level) => {
+                if (level === 1) {
+                    console.log("Applying Categorical Imperative");
+                    engine.gameState.categoricalImperativeActive = true;
+                    engine.gameState.categoricalSequence = {
+                        current: null, // Current category in sequence
+                        lastWord: null, // Last activated word
+                        stepsComplete: 0, // Steps completed in sequence
+                        categories: ['Micro', 'Meso', 'Macro'] // Order of categories
+                    };
+                }
+            }
+        },
+        {
+            id: 'nihilistic_void',
+            name: 'Nihilistic Void',
+            description: 'Random spheres periodically disappear from existence, but each disappearance releases energy to nearby concepts.',
+            cost: 160,
+            maxLevel: 1,
+            applyEffect: (engine, level) => {
+                if (level === 1) {
+                    console.log("Applying Nihilistic Void");
+                    engine.gameState.nihilisticVoidActive = true;
+                    // Start the disappearance timer
+                    engine.startNihilisticVoidTimer();
+                }
+            }
+        },
     ];
 
     // Apply an upgrade by ID
@@ -248,6 +297,10 @@ export class UpgradeSystem {
          this.engine.gameState.quantumUncertaintyActive = false;
          this.engine.gameState.skepticalMethodActive = false;
          this.engine.gameState.deterministicUniverseActive = false;
+         this.engine.gameState.eternalismActive = false;
+         this.engine.gameState.categoricalImperativeActive = false;
+         this.engine.gameState.nihilisticVoidActive = false;
+         this.engine.gameState.categoricalSequence = null;
 
          // Reset multipliers or effects applied by upgrades
          this.engine.physics.collisionEnergyMultiplier = 1.0;

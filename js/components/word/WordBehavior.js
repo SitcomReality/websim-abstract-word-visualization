@@ -141,16 +141,62 @@ export class WordBehavior {
         if (this.core.isActive || this.core.isDragging || this.core.isBeingDestroyed || !this.core.isVisible) return;
 
         const now = Date.now();
-        if (now - this.lastActivationTime < this.activationCooldown) {
+        
+        // Eternalism upgrade removes cooldowns
+        if (!this.engine.gameState.eternalismActive && now - this.lastActivationTime < this.activationCooldown) {
             this.showCooldownFeedback();
             return;
         }
 
-        if (this.engine.gameState.skepticalMethodActive && Math.random() < 0.3) {
-            console.log("Skeptical Method: Activation Failed");
-            this.showCooldownFeedback(); 
-            this.lastActivationTime = now; 
-            return; 
+        // Check Categorical Imperative
+        if (this.engine.gameState.categoricalImperativeActive) {
+            const sequence = this.engine.gameState.categoricalSequence;
+            const currentCategory = this.core.ontologicalCategory;
+            
+            // First activation in sequence
+            if (!sequence.current) {
+                if (currentCategory !== sequence.categories[0]) {
+                    this.showCategoryFeedback(`Must start with ${sequence.categories[0]} concepts!`);
+                    return;
+                }
+                sequence.current = currentCategory;
+                sequence.lastWord = this.core;
+                sequence.stepsComplete = 1;
+            } 
+            // Continuing a sequence
+            else {
+                const expectedIndex = sequence.categories.indexOf(sequence.current) + 1;
+                
+                // If we've completed the sequence, start over
+                if (expectedIndex >= sequence.categories.length) {
+                    // Reset and allow starting with any category
+                    if (currentCategory !== sequence.categories[0]) {
+                        this.showCategoryFeedback(`Must start with ${sequence.categories[0]} concepts!`);
+                        return;
+                    }
+                    sequence.current = currentCategory;
+                    sequence.lastWord = this.core;
+                    sequence.stepsComplete = 1;
+                }
+                // Check if this activation follows the correct sequence
+                else {
+                    const expectedCategory = sequence.categories[expectedIndex];
+                    if (currentCategory !== expectedCategory) {
+                        this.showCategoryFeedback(`Expected ${expectedCategory} concept!`);
+                        return;
+                    }
+                    sequence.current = currentCategory;
+                    sequence.lastWord = this.core;
+                    sequence.stepsComplete += 1;
+                    
+                    // Check if sequence is complete
+                    if (sequence.stepsComplete === sequence.categories.length) {
+                        this.showCategoryFeedback('Sequence Complete! Bonus Energy!', true);
+                        sequence.stepsComplete = 0;
+                        sequence.current = null;
+                    }
+                }
+            }
         }
 
         this.lastActivationTime = now;
@@ -170,7 +216,16 @@ export class WordBehavior {
         const comboMultiplier = this.engine.comboSystem?.registerActivation() || 1;
         const skepticalBonus = this.engine.gameState.skepticalMethodActive ? 3 : 1;
         const chromaticBonus = (this.engine.gameState.chromaticBlindnessColor && this.core.epistemologicalSchool.toLowerCase() !== this.engine.gameState.chromaticBlindnessColor.toLowerCase()) ? 4 : 1;
-        const totalMultiplier = resonanceMultiplier * comboMultiplier * skepticalBonus * chromaticBonus;
+        
+        // Eternalism reduces energy by 40%
+        const eternalismModifier = this.engine.gameState.eternalismActive ? 0.6 : 1;
+        
+        // Categorical Imperative completed sequence bonus
+        const categoricalBonus = (this.engine.gameState.categoricalImperativeActive && 
+                               this.engine.gameState.categoricalSequence.stepsComplete === 0) ? 3 : 1;
+        
+        const totalMultiplier = resonanceMultiplier * comboMultiplier * skepticalBonus * 
+                              chromaticBonus * eternalismModifier * categoricalBonus;
 
         if (this.engine && typeof this.engine.addEnergy === 'function') {
             const energyGained = this.core.energyPotential * totalMultiplier;
@@ -356,5 +411,40 @@ export class WordBehavior {
                 this.core.element = null;
             };
         }
+    }
+
+    showCategoryFeedback(message, isSuccess = false) {
+        if (!this.core.container) return;
+        
+        const feedback = document.createElement('div');
+        feedback.className = 'category-feedback';
+        feedback.textContent = message;
+        
+        feedback.style.position = 'absolute';
+        feedback.style.left = `${this.core.x + this.core.radius}px`;
+        feedback.style.top = `${this.core.y - 30}px`;
+        feedback.style.color = isSuccess ? '#4caf50' : '#f44336';
+        feedback.style.fontWeight = 'bold';
+        feedback.style.textShadow = '0 0 5px rgba(0,0,0,0.8)';
+        feedback.style.backgroundColor = 'rgba(0,0,0,0.7)';
+        feedback.style.padding = '5px 10px';
+        feedback.style.borderRadius = '5px';
+        feedback.style.zIndex = '200';
+        feedback.style.pointerEvents = 'none';
+        feedback.style.transform = 'translate(-50%, -50%)';
+        
+        this.core.container.appendChild(feedback);
+        
+        feedback.animate([
+            { opacity: 1, transform: 'translate(-50%, -50%)' },
+            { opacity: 0, transform: 'translate(-50%, -100%)' }
+        ], {
+            duration: 1500,
+            easing: 'ease-out'
+        }).onfinish = () => {
+            if (this.core.container.contains(feedback)) {
+                this.core.container.removeChild(feedback);
+            }
+        };
     }
 }

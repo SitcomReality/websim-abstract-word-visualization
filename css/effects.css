@@ -38,3 +38,23 @@
 .combo-bonus-message {
     pointer-events: none;
 }
+
+.nihilistic-void-effect {
+    pointer-events: none;
+    z-index: 200;
+}
+
+.energy-transfer-particle {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 150;
+}
+
+.category-feedback {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 200;
+    white-space: nowrap;
+}

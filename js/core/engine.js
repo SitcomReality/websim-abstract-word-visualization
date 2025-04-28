@@ -23,6 +23,10 @@ export class Engine {
             quantumUncertaintyActive: false,
             skepticalMethodActive: false,
             deterministicUniverseActive: false,
+            eternalismActive: false,
+            categoricalImperativeActive: false,
+            nihilisticVoidActive: false,
+            categoricalSequence: null,
             // --- End GDD States ---
             tutorialStep: 0,
             discoveredConcepts: []
@@ -31,6 +35,7 @@ export class Engine {
         this.container = null;
         // Add properties for global modifiers if needed by upgrades
         this.fusionSuccessRateModifier = 1.0;
+        this.nihilisticVoidInterval = null;
 
         // Initialize Managers and Systems
         this.screenManager = new ScreenManager(this);
@@ -266,5 +271,133 @@ export class Engine {
                 }
             };
         }, 4000);
+    }
+
+    startNihilisticVoidTimer() {
+        if (!this.nihilisticVoidInterval) {
+            this.nihilisticVoidInterval = setInterval(() => {
+                if (this.gameState.active && this.gameState.currentScreen === 'game' && this.gameState.nihilisticVoidActive) {
+                    this.triggerNihilisticVoid();
+                }
+            }, 12000); // Every 12 seconds
+        }
+    }
+
+    stopNihilisticVoidTimer() {
+        if (this.nihilisticVoidInterval) {
+            clearInterval(this.nihilisticVoidInterval);
+            this.nihilisticVoidInterval = null;
+        }
+    }
+
+    triggerNihilisticVoid() {
+        const visibleWords = this.gameState.words.filter(word => word.isVisible && !word.isBeingDestroyed);
+        if (visibleWords.length < 2) return; // Need at least 2 words
+        
+        // Select a random word to vanish
+        const randomIndex = Math.floor(Math.random() * visibleWords.length);
+        const wordToVanish = visibleWords[randomIndex];
+        
+        // Show void effect
+        const voidEffect = document.createElement('div');
+        voidEffect.className = 'nihilistic-void-effect';
+        voidEffect.style.position = 'absolute';
+        voidEffect.style.left = `${wordToVanish.x + wordToVanish.radius}px`;
+        voidEffect.style.top = `${wordToVanish.y + wordToVanish.radius}px`;
+        voidEffect.style.width = '0';
+        voidEffect.style.height = '0';
+        voidEffect.style.borderRadius = '50%';
+        voidEffect.style.background = 'radial-gradient(circle, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 70%)';
+        voidEffect.style.transform = 'translate(-50%, -50%)';
+        voidEffect.style.zIndex = '200';
+        this.container.appendChild(voidEffect);
+        
+        // Animate the void
+        voidEffect.animate([
+            { width: '0', height: '0', opacity: 0 },
+            { width: '200px', height: '200px', opacity: 0.8 },
+            { width: '50px', height: '50px', opacity: 0 }
+        ], {
+            duration: 2000,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+        }).onfinish = () => {
+            if (this.container.contains(voidEffect)) {
+                this.container.removeChild(voidEffect);
+            }
+        };
+        
+        // Calculate energy to distribute
+        const energyReleased = wordToVanish.energyPotential * 2;
+        const energyPerWord = Math.ceil(energyReleased / (visibleWords.length - 1));
+        
+        // Destroy the word
+        wordToVanish.destroy();
+        
+        // Distribute energy to other words
+        visibleWords.forEach(word => {
+            if (word !== wordToVanish) {
+                // Visual energy transfer
+                this.createEnergyTransferEffect(
+                    wordToVanish.x + wordToVanish.radius,
+                    wordToVanish.y + wordToVanish.radius,
+                    word.x + word.radius,
+                    word.y + word.radius,
+                    energyPerWord
+                );
+                
+                // Add energy
+                setTimeout(() => {
+                    if (word.isVisible && !word.isBeingDestroyed) {
+                        this.addEnergy(energyPerWord);
+                    }
+                }, 500);
+            }
+        });
+    }
+
+    createEnergyTransferEffect(startX, startY, endX, endY, amount) {
+        const duration = 800;
+        const particleCount = Math.min(5, Math.max(2, Math.floor(amount / 10)));
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'energy-transfer-particle';
+            particle.textContent = i === 0 ? `+${amount}` : '';
+            particle.style.position = 'absolute';
+            particle.style.left = `${startX}px`;
+            particle.style.top = `${startY}px`;
+            particle.style.color = '#4caf50';
+            particle.style.fontWeight = 'bold';
+            particle.style.fontSize = i === 0 ? '18px' : '14px';
+            particle.style.textShadow = '0 0 5px rgba(0,0,0,0.8)';
+            particle.style.zIndex = '150';
+            particle.style.pointerEvents = 'none';
+            
+            this.container.appendChild(particle);
+            
+            // Add slight variation to destination
+            const targetX = endX + (Math.random() - 0.5) * 20;
+            const targetY = endY + (Math.random() - 0.5) * 20;
+            
+            // Animate along a curved path
+            const keyframes = [
+                { left: `${startX}px`, top: `${startY}px`, opacity: 1 },
+                { 
+                    left: `${startX + (targetX - startX) * 0.5 + (Math.random() - 0.5) * 50}px`, 
+                    top: `${startY + (targetY - startY) * 0.3 - 50 - Math.random() * 50}px`, 
+                    opacity: 0.8 
+                },
+                { left: `${targetX}px`, top: `${targetY}px`, opacity: 0 }
+            ];
+            
+            particle.animate(keyframes, {
+                duration: duration + Math.random() * 300,
+                easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+            }).onfinish = () => {
+                if (this.container.contains(particle)) {
+                    this.container.removeChild(particle);
+                }
+            };
+        }
     }
 }
