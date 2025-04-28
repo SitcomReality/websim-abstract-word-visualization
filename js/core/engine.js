@@ -208,18 +208,22 @@ export class Engine {
                     if (now - this.lastCollisionTime > this.collisionCooldown) {
                         const impactSpeed = Math.abs(velAlongNormal);
                         if (impactSpeed > 1) {
-                            const sound;
+                            let sound;
                             if (impactSpeed < 3) sound = this.collisionSounds.light;
                             else if (impactSpeed < 6) sound = this.collisionSounds.medium;
                             else sound = this.collisionSounds.heavy;
 
-                            sound.playbackRate = 0.9 + Math.random() * 0.2;
-                            sound.volume = 0.3;
-                            sound.currentTime = 0;
-                            sound.play().catch(e => {/* Ignore autoplay blocking */});
-                            this.lastCollisionTime = now;
+                            if (sound && sound.readyState >= 2) {
+                                sound.playbackRate = 0.9 + Math.random() * 0.2;
+                                sound.volume = Math.min(0.1 + impactSpeed * 0.05, 0.5);
+                                sound.currentTime = 0;
+                                sound.play().catch(e => {
+                                });
+                                this.lastCollisionTime = now;
+                            }
                         }
                     }
+
                     if (Math.abs(velAlongNormal) > 0.5) {
                         const contactX = (word1.x + word1.radius) + nx * (word1.radius - overlap / 2);
                         const contactY = (word1.y + word1.radius) + ny * (word1.radius - overlap / 2);
