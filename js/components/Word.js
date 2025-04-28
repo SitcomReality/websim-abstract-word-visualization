@@ -1,21 +1,25 @@
 import { WordCore } from './word/WordCore.js';
-import { WordBehavior } from './word/WordBehavior.js';
 import { WordInteractionHandler } from './WordInteractionHandler.js';
+import { WordPhysics } from './word/WordPhysics.js';
+import { WordActivation } from './word/WordActivation.js';
+import { WordFeedback } from './word/WordFeedback.js';
+import { WordLifecycle } from './word/WordLifecycle.js';
 
 export class Word {
     constructor(data, container, engine) {
         this.core = new WordCore(data, container, engine);
-        this.behavior = new WordBehavior(this.core, engine);
-        this.interactionHandler = new WordInteractionHandler(this, container, engine); // Pass the main Word instance
+        this.physics = new WordPhysics(this.core, engine);
+        this.feedback = new WordFeedback(this.core, engine, this.physics);
+        this.activation = new WordActivation(this.core, engine, this.physics, this.feedback);
+        this.lifecycle = new WordLifecycle(this.core, engine);
+
+        this.interactionHandler = new WordInteractionHandler(this, container, engine);
 
         this.addEventListeners();
 
-        // Initial visibility check based on engine state
-        this.behavior.updateVisibility(); // Moved call here after core/behavior init
+        this.lifecycle.updateVisibility(this.interactionHandler);
     }
 
-    // --- Public Accessors ---
-    // Provide access to core properties needed externally
     get id() { return this.core.id; }
     get text() { return this.core.text; }
     get size() { return this.core.size; }
@@ -25,45 +29,39 @@ export class Word {
     set x(value) { this.core.x = value; }
     get y() { return this.core.y; }
     set y(value) { this.core.y = value; }
-    get vx() { return this.behavior.vx; }
-    set vx(value) { this.behavior.vx = value; }
-    get vy() { return this.behavior.vy; }
-    set vy(value) { this.behavior.vy = value; }
-    get mass() { return this.behavior.mass; }
-    get restitution() { return this.behavior.restitution; }
-    set restitution(value) { this.behavior.restitution = value; }
+    get vx() { return this.physics.vx; }
+    set vx(value) { this.physics.vx = value; }
+    get vy() { return this.physics.vy; }
+    set vy(value) { this.physics.vy = value; }
+    get mass() { return this.physics.mass; }
+    set restitution(value) { this.physics.restitution = value; }
+    get restitution() { return this.physics.restitution; }
     get element() { return this.core.element; }
     get isDragging() { return this.core.isDragging; }
-    set isDragging(value) { this.core.isDragging = value; } // Needed by InteractionHandler
+    set isDragging(value) { this.core.isDragging = value; }
     get isBeingDestroyed() { return this.core.isBeingDestroyed; }
     get isVisible() { return this.core.isVisible; }
     get energyPotential() { return this.core.energyPotential; }
     set energyPotential(value) { this.core.energyPotential = value; }
     get baseEnergyPotential() { return this.core.baseEnergyPotential; }
-    set baseEnergyPotential(value) { this.core.baseEnergyPotential = value; } // Needed for upgrades
+    set baseEnergyPotential(value) { this.core.baseEnergyPotential = value; }
     get epistemologicalSchool() { return this.core.epistemologicalSchool; }
-    get engine() { return this.core.engine; } // Needed by InteractionHandler & Behavior
-    get container() { return this.core.container; } // Needed by InteractionHandler
-    get maxSpeed() { return this.behavior.maxSpeed; } // Needed by InteractionHandler
-
-
-    // --- Core Methods ---
+    get engine() { return this.core.engine; }
+    get container() { return this.core.container; }
+    get maxSpeed() { return this.physics.maxSpeed; }
+    get ontologicalCategory() { return this.core.ontologicalCategory; }
 
     addEventListeners() {
         if (!this.core.element) return;
 
-        // Prevent interaction if not visible or being destroyed
         const handleInteraction = (handlerFn, event) => {
             if (!this.core.isVisible || this.core.isBeingDestroyed) return;
             handlerFn.call(this.interactionHandler, event);
         };
 
         const handleActivation = (event) => {
-            if (!this.core.isVisible || this.core.isBeingDestroyed) return;
-            // Check dragMoved on the interactionHandler instance
-            if (!this.interactionHandler.dragMoved) {
-                this.activate(); // Call the main Word activate method
-            }
+            if (!this.core.isVisible || this.core.isBeingDestroyed || this.interactionHandler.dragMoved) return;
+            this.activate();
         }
 
         this.core.element.addEventListener('click', handleActivation);
@@ -74,26 +72,24 @@ export class Word {
                  handleInteraction(this.interactionHandler.startDrag, e.touches[0]);
              }
          }, { passive: false });
-
-        // Window listeners remain managed by WordInteractionHandler
     }
 
-    // --- Delegated Methods ---
-
     update(dt = 1) {
-        this.behavior.updatePhysics(dt);
+        this.physics.updatePhysics(dt);
+        this.feedback.updateResonanceVisuals();
+        this.core.updateElementPosition();
     }
 
     activate() {
-        this.behavior.activate();
+        this.activation.activate();
     }
 
     destroy(skipAnimation = false) {
-        this.behavior.destroy(skipAnimation);
+        this.lifecycle.destroy(skipAnimation);
     }
 
     applyImpulse(impulseX, impulseY) {
-        this.behavior.applyImpulse(impulseX, impulseY);
+        this.physics.applyImpulse(impulseX, impulseY);
     }
 
     updateElementPosition() {
@@ -101,15 +97,10 @@ export class Word {
     }
 
     updateResonanceVisuals() {
-        this.behavior.updateResonanceVisuals();
+        this.feedback.updateResonanceVisuals();
     }
 
-    // Method to update visibility based on engine state (e.g., Chromatic Blindness)
     updateVisibility() {
-         this.behavior.updateVisibility();
-         // If becoming invisible while dragging, cancel drag via interaction handler
-         if (!this.core.isVisible && this.core.isDragging) {
-             this.interactionHandler.endDrag(null, true); // Cancel drag
-         }
+        this.lifecycle.updateVisibility(this.interactionHandler);
      }
 }
