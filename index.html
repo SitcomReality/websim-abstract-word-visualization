@@ -21,63 +21,6 @@
     }
     </script>
     <script type="module" src="js/main.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background: #121212;
-            font-family: 'Arial', sans-serif;
-            color: #f0f0f0;
-            user-select: none;
-        }
-        
-        .container {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-        }
-        
-        .word {
-            position: absolute;
-            cursor: pointer;
-            transition: transform 0.3s ease-out, opacity 0.3s;
-            transform-origin: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
-        }
-        
-        .word span {
-            font-weight: bold;
-            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-            pointer-events: none;
-        }
-        
-        .screen {
-            display: none;
-        }
-        
-        .screen.active {
-            display: block;
-        }
-        
-        .trail {
-            position: absolute;
-            border-radius: 50%;
-            pointer-events: none;
-            animation: fadeOut 1s forwards;
-        }
-        
-        @keyframes fadeOut {
-            to {
-                opacity: 0;
-                transform: scale(0.3);
-            }
-        }
-    </style>
 </head>
 <body>
     <div id="app">
@@ -89,16 +32,7 @@
         </div>
         
         <div id="game-screen" class="screen">
-            <div class="container">
-                <div id="smorma" class="word"><span>Smorma pips</span></div>
-                <div id="pips" class="word"><span>Pips</span></div>
-                <div id="tine" class="word"><span>Tine</span></div>
-                <div id="elusive" class="word"><span>Elusive allusion</span></div>
-                <div id="paradiastolic" class="word"><span>Paradiastolic clotting</span></div>
-                <div id="perihelion" class="word"><span>Perihelion torsion</span></div>
-                <div id="scolflocs" class="word"><span>Scolflocs periporter</span></div>
-                <div id="hyperbolic" class="word"><span>Hyperbolic lenity</span></div>
-            </div>
+            <div class="container"></div>
         </div>
     </div>
 
@@ -116,29 +50,49 @@
             });
             
             // Initialize positions
-            words.forEach(word => {
-                positionRandomly(word);
+            const wordElements = [
+                { id: 'smorma', text: 'Smorma pips' },
+                { id: 'pips', text: 'Pips' },
+                { id: 'tine', text: 'Tine' },
+                { id: 'elusive', text: 'Elusive allusion' },
+                { id: 'paradiastolic', text: 'Paradiastolic clotting' },
+                { id: 'perihelion', text: 'Perihelion torsion' },
+                { id: 'scolflocs', text: 'Scolflocs periporter' },
+                { id: 'hyperbolic', text: 'Hyperbolic lenity' }
+            ];
+
+            wordElements.forEach(word => {
+                const wordElement = document.createElement('div');
+                wordElement.classList.add('word');
+                wordElement.id = word.id;
+                const span = document.createElement('span');
+                span.textContent = word.text;
+                wordElement.appendChild(span);
+                container.appendChild(wordElement);
+
+                positionRandomly(wordElement);
                 
                 // Add floating animation
                 setInterval(() => {
-                    if (!word.classList.contains('active')) {
-                        word.style.transform = `translate(${Math.sin(Date.now() * 0.001 + parseInt(word.id.charCodeAt(0))) * 10}px, 
-                                               ${Math.cos(Date.now() * 0.001 + parseInt(word.id.charCodeAt(0))) * 10}px) 
+                    if (!wordElement.classList.contains('active')) {
+                        wordElement.style.transform = `translate(${Math.sin(Date.now() * 0.001 + parseInt(wordElement.id.charCodeAt(0))) * 10}px, 
+                                               ${Math.cos(Date.now() * 0.001 + parseInt(wordElement.id.charCodeAt(0))) * 10}px) 
                                                rotate(${Math.sin(Date.now() * 0.0005) * 5}deg)`;
                     }
                 }, 50);
                 
                 // Click events
-                word.addEventListener('click', () => {
-                    words.forEach(w => w.classList.remove('active'));
-                    word.classList.add('active');
+                wordElement.addEventListener('click', () => {
+                    const allWords = document.querySelectorAll('.word');
+                    allWords.forEach(w => w.classList.remove('active'));
+                    wordElement.classList.add('active');
                     
                     // Create special effect based on word
-                    createSpecialEffect(word);
+                    createSpecialEffect(wordElement);
                     
                     // Reset after 3 seconds
                     setTimeout(() => {
-                        word.classList.remove('active');
+                        wordElement.classList.remove('active');
                     }, 3000);
                 });
                 
@@ -146,29 +100,29 @@
                 let isDragging = false;
                 let offsetX, offsetY;
                 
-                word.addEventListener('mousedown', (e) => {
+                wordElement.addEventListener('mousedown', (e) => {
                     isDragging = true;
-                    offsetX = e.clientX - word.getBoundingClientRect().left;
-                    offsetY = e.clientY - word.getBoundingClientRect().top;
-                    word.style.transition = 'none';
+                    offsetX = e.clientX - wordElement.getBoundingClientRect().left;
+                    offsetY = e.clientY - wordElement.getBoundingClientRect().top;
+                    wordElement.style.transition = 'none';
                 });
                 
                 document.addEventListener('mousemove', (e) => {
                     if (isDragging) {
                         const x = e.clientX - offsetX;
                         const y = e.clientY - offsetY;
-                        word.style.left = `${x}px`;
-                        word.style.top = `${y}px`;
+                        wordElement.style.left = `${x}px`;
+                        wordElement.style.top = `${y}px`;
                         
                         // Create trail
-                        createTrail(e.clientX, e.clientY, word);
+                        createTrail(e.clientX, e.clientY, wordElement);
                     }
                 });
                 
                 document.addEventListener('mouseup', () => {
                     if (isDragging) {
                         isDragging = false;
-                        word.style.transition = 'transform 0.3s ease-out, opacity 0.3s';
+                        wordElement.style.transition = 'transform 0.3s ease-out, opacity 0.3s';
                     }
                 });
             });
