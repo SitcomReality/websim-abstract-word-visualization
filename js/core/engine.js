@@ -13,6 +13,7 @@ export class Engine {
         this.container = null;
         this.currentEnergy = 0;
         this.energyDisplayElement = null;
+        this.shopItems = [];
 
         this.collisionSounds = {
             light: new Audio(),
@@ -25,18 +26,27 @@ export class Engine {
 
     init() {
         initSplashScreen(this.switchToGameScreen.bind(this));
+        this.initShopSystem();
     }
 
     switchToGameScreen() {
         const splashScreen = document.getElementById('splash-screen');
         const gameScreen = document.getElementById('game-screen');
+        const shopScreen = document.getElementById('shop-screen');
 
         if (splashScreen) splashScreen.classList.remove('active');
+        if (shopScreen) shopScreen.classList.remove('active');
         if (gameScreen) {
             gameScreen.classList.add('active');
             this.container = gameScreen.querySelector('.container');
             this.energyDisplayElement = document.getElementById('energy-counter');
             this.updateEnergyDisplay(); // Initialize display
+
+            // Setup shop button
+            const shopButton = document.getElementById('shop-button');
+            if (shopButton) {
+                shopButton.addEventListener('click', () => this.openShop());
+            }
 
             if (this.container) {
                 // Pass the engine instance to initGameScreen
@@ -55,6 +65,270 @@ export class Engine {
         } else {
             console.error("Game screen element not found!");
         }
+    }
+
+    initShopSystem() {
+        // Initialize shop items
+        this.shopItems = [
+            {
+                id: 'word_multiplier',
+                name: 'Word Multiplier',
+                description: 'Increases energy generated from words by 25%',
+                cost: 50,
+                maxLevel: 5,
+                currentLevel: 0,
+                effect: level => ({ energyMultiplier: 1 + (level * 0.25) })
+            },
+            {
+                id: 'new_word',
+                name: 'New Word',
+                description: 'Adds a new random word to your collection',
+                cost: 100,
+                maxLevel: 10,
+                currentLevel: 0,
+                effect: level => ({ newWordCount: level })
+            },
+            {
+                id: 'faster_regen',
+                name: 'Energy Accelerator',
+                description: 'Words regenerate energy 20% faster',
+                cost: 75,
+                maxLevel: 3,
+                currentLevel: 0,
+                effect: level => ({ regenSpeed: 1 + (level * 0.2) })
+            },
+            {
+                id: 'word_size',
+                name: 'Word Enlarger',
+                description: 'Increases the size and impact of your words',
+                cost: 120,
+                maxLevel: 3,
+                currentLevel: 0,
+                effect: level => ({ sizeMultiplier: 1 + (level * 0.15) })
+            }
+        ];
+
+        // Setup close shop button
+        const closeShopButton = document.getElementById('close-shop');
+        if (closeShopButton) {
+            closeShopButton.addEventListener('click', () => this.closeShop());
+        }
+    }
+
+    openShop() {
+        const gameScreen = document.getElementById('game-screen');
+        const shopScreen = document.getElementById('shop-screen');
+        
+        if (gameScreen && shopScreen) {
+            // Pause game physics while shop is open
+            this.gameState.active = false;
+            
+            gameScreen.classList.remove('active');
+            shopScreen.classList.add('active');
+            
+            // Populate shop items
+            this.renderShopItems();
+        }
+    }
+    
+    closeShop() {
+        const shopScreen = document.getElementById('shop-screen');
+        const gameScreen = document.getElementById('game-screen');
+        
+        if (shopScreen && gameScreen) {
+            shopScreen.classList.remove('active');
+            gameScreen.classList.add('active');
+            
+            // Resume game physics
+            this.gameState.active = true;
+            this.lastTimestamp = performance.now();
+            this.startGameLoop();
+        }
+    }
+    
+    renderShopItems() {
+        const shopItemsContainer = document.querySelector('.shop-items');
+        if (!shopItemsContainer) return;
+        
+        shopItemsContainer.innerHTML = '';
+        
+        this.shopItems.forEach(item => {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'shop-item';
+            if (this.currentEnergy < item.cost || item.currentLevel >= item.maxLevel) {
+                itemElement.classList.add('disabled');
+            }
+            
+            const nextLevel = item.currentLevel + 1;
+            const costMultiplier = item.currentLevel > 0 ? (1 + item.currentLevel * 0.5) : 1;
+            const currentCost = Math.round(item.cost * costMultiplier);
+            
+            itemElement.innerHTML = `
+                <div class="item-name">${item.name} ${item.currentLevel > 0 ? `(Lvl ${item.currentLevel})` : ''}</div>
+                <div class="item-description">${item.description}</div>
+                <div class="item-cost">${currentCost} Energy</div>
+                ${item.currentLevel >= item.maxLevel ? '<div class="max-level">MAX LEVEL</div>' : ''}
+            `;
+            
+            if (this.currentEnergy >= currentCost && item.currentLevel < item.maxLevel) {
+                itemElement.addEventListener('click', () => this.purchaseUpgrade(item.id));
+            }
+            
+            shopItemsContainer.appendChild(itemElement);
+        });
+    }
+    
+    purchaseUpgrade(itemId) {
+        const item = this.shopItems.find(i => i.id === itemId);
+        if (!item) return;
+        
+        const costMultiplier = item.currentLevel > 0 ? (1 + item.currentLevel * 0.5) : 1;
+        const cost = Math.round(item.cost * costMultiplier);
+        
+        if (this.currentEnergy >= cost && item.currentLevel < item.maxLevel) {
+            // Deduct energy
+            this.addEnergy(-cost);
+            
+            // Increase item level
+            item.currentLevel++;
+            
+            // Apply upgrade effect
+            this.applyUpgradeEffect(item);
+            
+            // Re-render shop
+            this.renderShopItems();
+        }
+    }
+    
+    applyUpgradeEffect(item) {
+        switch(item.id) {
+            case 'word_multiplier':
+                // Update energy potential for all words
+                const multiplier = item.effect(item.currentLevel).energyMultiplier;
+                this.gameState.words.forEach(word => {
+                    const baseWord = WORDS_DATA.find(w => w.id === word.id);
+                    if (baseWord) {
+                        word.energyPotential = Math.round(baseWord.energyPotential * multiplier);
+                    }
+                });
+                break;
+                
+            case 'new_word':
+                // Add a new random word
+                this.addRandomWord();
+                break;
+                
+            case 'faster_regen':
+                // Words will generate energy faster (handled when clicking)
+                // Just a visual notification here
+                const speedEffect = item.effect(item.currentLevel).regenSpeed;
+                this.showUpgradeEffect(`Energy regen speed: ${Math.round(speedEffect * 100)}%`);
+                break;
+                
+            case 'word_size':
+                // Increase size of all words
+                const sizeMultiplier = item.effect(item.currentLevel).sizeMultiplier;
+                this.gameState.words.forEach(word => {
+                    const newSize = word.size * (1 + 0.15);
+                    word.element.style.width = `${newSize}px`;
+                    word.element.style.height = `${newSize}px`;
+                    word.size = newSize;
+                    word.radius = newSize / 2;
+                    word.mass = Math.PI * word.radius * word.radius;
+                });
+                break;
+        }
+    }
+    
+    addRandomWord() {
+        if (!this.container) return;
+        
+        // Get a random word data from WORDS_DATA
+        const randomIndex = Math.floor(Math.random() * WORDS_DATA.length);
+        const baseWordData = WORDS_DATA[randomIndex];
+        
+        // Create a slightly modified version
+        const wordData = {
+            id: `${baseWordData.id}_${Date.now()}`,
+            text: this.generateRandomName(baseWordData.text),
+            size: baseWordData.size * (0.8 + Math.random() * 0.4),
+            colors: {
+                primary: this.adjustColor(baseWordData.colors.primary),
+                secondary: this.adjustColor(baseWordData.colors.secondary)
+            },
+            energyPotential: Math.round(baseWordData.energyPotential * (0.8 + Math.random() * 0.6))
+        };
+        
+        // Create and add the new word
+        const word = new Word(wordData, this.container, this);
+        this.gameState.words.push(word);
+        
+        // Show visual effect
+        this.showUpgradeEffect(`New word added: ${wordData.text}`);
+    }
+    
+    generateRandomName(baseName) {
+        const adjectives = ['Cosmic', 'Quantum', 'Astral', 'Ethereal', 'Mystic', 'Arcane', 'Prismatic', 'Celestial'];
+        const nouns = ['Nexus', 'Echo', 'Pulse', 'Cipher', 'Vortex', 'Sigil', 'Nimbus', 'Flux'];
+        
+        if (Math.random() > 0.5) {
+            return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${baseName}`;
+        } else {
+            return `${baseName} ${nouns[Math.floor(Math.random() * nouns.length)]}`;
+        }
+    }
+    
+    adjustColor(hexColor) {
+        // Add slight variation to the color
+        const r = parseInt(hexColor.slice(1, 3), 16);
+        const g = parseInt(hexColor.slice(3, 5), 16);
+        const b = parseInt(hexColor.slice(5, 7), 16);
+        
+        const variation = 30; // Color variation amount
+        
+        let newR = r + Math.floor((Math.random() - 0.5) * variation * 2);
+        let newG = g + Math.floor((Math.random() - 0.5) * variation * 2);
+        let newB = b + Math.floor((Math.random() - 0.5) * variation * 2);
+        
+        // Clamp values
+        newR = Math.max(0, Math.min(255, newR));
+        newG = Math.max(0, Math.min(255, newG));
+        newB = Math.max(0, Math.min(255, newB));
+        
+        return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+    }
+    
+    showUpgradeEffect(message) {
+        if (!this.container) return;
+        
+        const notification = document.createElement('div');
+        notification.className = 'upgrade-notification';
+        notification.textContent = message;
+        notification.style.position = 'absolute';
+        notification.style.top = '50%';
+        notification.style.left = '50%';
+        notification.style.transform = 'translate(-50%, -50%)';
+        notification.style.backgroundColor = 'rgba(156, 39, 176, 0.8)';
+        notification.style.color = 'white';
+        notification.style.padding = '15px 25px';
+        notification.style.borderRadius = '10px';
+        notification.style.zIndex = '200';
+        notification.style.textAlign = 'center';
+        notification.style.fontSize = '1.2em';
+        notification.style.boxShadow = '0 0 20px rgba(156, 39, 176, 0.5)';
+        
+        this.container.appendChild(notification);
+        
+        // Animate and remove
+        setTimeout(() => {
+            notification.style.transition = 'opacity 1s ease-out';
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                if (this.container && this.container.contains(notification)) {
+                    this.container.removeChild(notification);
+                }
+            }, 1000);
+        }, 2000);
     }
 
     addEnergy(amount) {
